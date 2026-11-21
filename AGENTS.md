@@ -52,18 +52,18 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 
 ### Stack
 - TypeScript 5.x in strict mode, Node.js 22.x, pnpm 9.x
-
 - ESLint with @typescript-eslint/recommended and @typescript-eslint/recommended-requiring-type-checking
 - Prettier for code formatting
 - Vitest for unit and end-to-end testing
-- Zod for schema validation and environment variable parsing
+- Zod for schema validation and environment variable parsing (a runtime dependency; everything else is dev-only)
+
 ### Layout
 - `src/` — application code grouped by feature: `config/`, `types/`, `utils/`
 - `src/config/` — environment variable schemas and validation
 - `src/types/` — domain type definitions (Trade, Position, Valuation, etc.)
-- `src/utils/` — shared utilities (validation helpers, error classes)
+- `src/utils/` — shared utilities (validation helpers, error classes, the logger)
 - Each `.ts` file has a corresponding `.test.ts` file with its unit tests
-- `src/index.ts` — main entry point that exports public API
+- `src/index.ts` — main entry point that exports the public API; it calls `initialize()` only when run directly (`pnpm start`), not when imported
 
 ### Decisions
 - TypeScript strict mode: catch type errors early and prevent `any` usage
@@ -71,6 +71,8 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - Zod for validation: type-safe schema validation that infer Types from schemas
 - Vitest over Jest: native ESM support, faster, built-in TypeScript support
 - Co-located tests: each module's tests live next to it in the same directory
+- Logging: always through `createLogger()` in `src/utils/logger.ts`, never `console.*` directly, so `LOG_LEVEL` applies everywhere
+- `src/types/trade.ts` is a first sketch of the trading model, not a decision: the feature stories may reshape it
 
 ### Domain terms
 - **Trade**: A nickel buy or sell transaction with quantity, price, dates, and status
@@ -81,4 +83,6 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 
 ### Gotchas
 - `crypto.randomUUID()` requires Node.js global `crypto` — works in Node 22, may need polyfill in older versions
+- `pnpm run build` uses `tsconfig.build.json`, which leaves the test files out of `dist/`; `tsconfig.json` still covers them for type checking
+- Prettier skips AGENTS.md (see `.prettierignore`): Laimonade replaces the standards section exactly as written
 - ESLint `recommended-requiring-type-checking` rules need TypeScript type info — requires `project` setting in parserOptions

@@ -6,7 +6,11 @@
  * and exports the core functionality.
  */
 
+import { realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { ZodError } from 'zod';
 import { validateEnv } from './config/env.js';
+import { createLogger } from './utils/logger.js';
 import { generateId, type Trade, type Position, type Valuation } from './types/trade.js';
 import { ValidationError } from './utils/validation.js';
 
@@ -28,11 +32,12 @@ export function initialize(): void {
   // Validate environment at startup
   const env = validateEnv();
 
-  // Log initialization
-  console.log(`${APP_INFO.name} v${APP_INFO.version} initialized`);
-  console.log(`Environment: ${env.NODE_ENV}`);
-  console.log(`Port: ${env.PORT}`);
-  console.log(`Log level: ${env.LOG_LEVEL}`);
+  const logger = createLogger(env.LOG_LEVEL);
+  logger.info(`${APP_INFO.name} v${APP_INFO.version} initialized`, {
+    environment: env.NODE_ENV,
+    port: env.PORT,
+    logLevel: env.LOG_LEVEL,
+  });
 }
 
 /**
@@ -60,3 +65,31 @@ export function createTradeId(): string {
  */
 export type { Trade, Position, Valuation };
 export { ValidationError };
+
+/**
+ * Run initialize() when this file is executed directly (`node dist/index.js`),
+ * not when it is imported.
+ */
+function isMain(): boolean {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  try {
+    return realpathSync(entry) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+}
+
+if (isMain()) {
+  try {
+    initialize();
+  } catch (error) {
+    // The settings are invalid, so LOG_LEVEL cannot be trusted: always report it.
+    const issues =
+      error instanceof ZodError
+        ? error.issues.map((i) => ({ setting: i.path.join('.'), problem: i.message }))
+        : String(error);
+    createLogger('error').error('Hedgile could not start: invalid configuration', { issues });
+    process.exitCode = 1;
+  }
+}

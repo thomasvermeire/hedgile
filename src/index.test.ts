@@ -81,3 +81,29 @@ describe('Hedgile Application', () => {
     });
   });
 });
+
+describe('running the built app', () => {
+  it('starts with valid settings and refuses invalid ones', async () => {
+    const { execFileSync, spawnSync } = await import('node:child_process');
+    const { fileURLToPath, URL } = await import('node:url');
+    const root = fileURLToPath(new URL('..', import.meta.url));
+    execFileSync('pnpm', ['run', 'build'], { cwd: root, stdio: 'ignore' });
+
+    const ok = spawnSync('node', ['dist/index.js'], {
+      cwd: root,
+      env: { PATH: process.env.PATH, LOG_LEVEL: 'info' },
+      encoding: 'utf8',
+    });
+    expect(ok.status).toBe(0);
+    expect(ok.stdout).toContain('Hedgile v0.1.0 initialized');
+
+    const bad = spawnSync('node', ['dist/index.js'], {
+      cwd: root,
+      env: { PATH: process.env.PATH, LOG_LEVEL: 'loud' },
+      encoding: 'utf8',
+    });
+    expect(bad.status).toBe(1);
+    expect(bad.stderr).toContain('invalid configuration');
+    expect(bad.stderr).toContain('LOG_LEVEL');
+  }, 60_000);
+});
