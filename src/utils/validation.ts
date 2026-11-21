@@ -45,7 +45,7 @@ export function validate<T>(schema: z.ZodSchema<T>, data: unknown): T {
     return schema.parse(data);
   } catch (error) {
     if (error instanceof ZodError) {
-      throw new ValidationError('Validation failed', error.errors, 400);
+      throw new ValidationError('Validation failed', error.issues, 400);
     }
     throw error;
   }
@@ -71,7 +71,7 @@ export function validateOrNull<T>(schema: z.ZodSchema<T>, data: unknown): T | nu
  * @returns A ValidationError instance
  */
 export function fromZodError(error: ZodError): ValidationError {
-  return new ValidationError('Validation failed', error.errors, 400);
+  return new ValidationError('Validation failed', error.issues, 400);
 }
 
 /**

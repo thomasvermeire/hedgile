@@ -18,9 +18,8 @@ describe('Validation Utilities', () => {
         {
           code: 'invalid_type',
           expected: 'string',
-          received: 'number',
           path: ['name'],
-          message: 'Expected string, received number',
+          message: 'Invalid input: expected string, received number',
         },
       ];
 
@@ -38,9 +37,8 @@ describe('Validation Utilities', () => {
         {
           code: 'invalid_type',
           expected: 'string',
-          received: 'number',
           path: ['name'],
-          message: 'Expected string, received number',
+          message: 'Invalid input: expected string, received number',
         },
       ];
 
