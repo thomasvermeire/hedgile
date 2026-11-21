@@ -3,6 +3,13 @@
  * read and write, tried from a second organisation against Hedgile's records.
  */
 import { beforeEach, describe, expect, it } from 'vitest';
+import {
+  activateMetal,
+  addPeriod,
+  listBookMetals,
+  setBaseUnits,
+  updatePeriod,
+} from '../books/books.server';
 import { getAttachment, listAttachments } from '../master-data/attachments.server';
 import {
   createCompany,
@@ -124,6 +131,7 @@ describe('organisation isolation', () => {
     expect((await listCompanies(hedgile)).map((c) => c.name)).toEqual(['Hedgile Limited']);
     expect(await listMaterials(hedgile)).toHaveLength(2);
     expect(await listActiveReferences(hedgile)).toHaveLength(2);
+    expect((await listBookMetals(hedgile)).map((m) => m.symbol)).toEqual(['Co', 'Ni']);
     expect(await getAttachment(hedgile, 'att_h')).not.toBeNull();
     expect(await getDraft(hedgile, 'drf_h')).not.toBeNull();
     expect((await getProvenance(hedgile, 'line', 'l1', 'amount'))?.latest.value).toBe('61500');
@@ -133,6 +141,7 @@ describe('organisation isolation', () => {
     expect(await listCompanies(other)).toEqual([]);
     expect(await listMaterials(other)).toEqual([]);
     expect(await listActiveReferences(other)).toEqual([]);
+    expect(await listBookMetals(other)).toEqual([]);
     expect(await listAttachments(other, 'company')).toEqual([]);
     expect((await listMembers(other)).map((m) => m.email)).toEqual(['r@x.test']);
   });
@@ -190,6 +199,22 @@ describe('organisation isolation', () => {
     expect((await listMaterials(hedgile)).find((m) => m.code === 'NI-CATH')?.name).toBe(
       'Nickel cathodes'
     );
+  });
+
+  it("another organisation cannot change Hedgile's books", async () => {
+    const before = await listBookMetals(hedgile);
+    const ni = before.find((m) => m.symbol === 'Ni');
+    const draft = { status: 'inactive' as const, validFrom: '2018-12-01', validTo: null };
+    expect(await setBaseUnits(other, ni?.id ?? '', { baseUom: 'lb', baseCurrency: 'EUR' })).toBe(
+      false
+    );
+    expect(await addPeriod(other, ni?.id ?? '', { ...draft, validFrom: '2030-01-01' })).toBe(false);
+    expect(await updatePeriod(other, ni?.periods[0]?.id ?? '', draft)).toBe(false);
+    expect(await listBookMetals(hedgile)).toEqual(before);
+    // Activating in the other organisation creates its own rows and leaves Hedgile's alone.
+    await activateMetal(other, 'Ni');
+    expect((await listBookMetals(other)).map((m) => m.symbol)).toEqual(['Ni']);
+    expect(await listBookMetals(hedgile)).toEqual(before);
   });
 
   it("another organisation cannot read or change Hedgile's currencies", async () => {

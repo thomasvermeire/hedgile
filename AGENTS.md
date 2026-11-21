@@ -69,6 +69,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
   - `src/currencies/` — the ISO currency list (`currencies.ts`, browser-safe), the reporting-currency write (`currencies.server.ts`) and the Settings > Currencies cards.
   - `src/quality/` — quality stages (Settings > Quality stages): data access, `activeQualityStages(tenant)` for later quality modules, status badge.
   - `src/master-data/`, `src/settings/` — the first screens' data access.
+  - `src/books/` — Settings > Books: book metals and their periods (`books.server.ts`), pure period rules (`periods.ts`), the periodic table data (`elements.ts`) and picker, UoM/currency lists (`lists.ts`).
   - `src/posting/` — system date / posting date rules (`postingDateSchema`, `isBackdated`, `today`) and the organisation's test mode.
   - `src/provenance/` — why a value is what it is: `provenanceStatement` (record in the write's batch), `getProvenance`, Zod entry, `renderCalculation`; API at `src/routes/api.provenance.ts`.
   - `src/laimon/` — the Laimon panel, Claude calls, extraction kinds, drafts.
@@ -97,6 +98,8 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - Metals: `src/markets/` owns `metals` and the references of `metal_references`. A metal is in use (cannot be deleted) when `metalUsage(tenant, metalId)` returns reasons; later modules add their reasons there. Renaming a metal also updates `metal_references.metal`, which the menu shows.
 - Quality stages: a **locked** stage is a pre-set stage not available yet; it shows a lock and users cannot activate or deactivate it (only active <-> inactive for unlocked stages). Locked stages can still be renamed or reordered. Stages users add start active; codes are two uppercase letters, unique per organisation. Later modules read `activeQualityStages(tenant)`.
 
+- Books: only metals (not metalloids or non-metals) can be activated, checked on the server against `src/books/elements.ts`. Periods of one book metal never overlap (inclusive dates, `valid_to` NULL = open-ended); a period whose `valid_to` is before today (UTC) cannot change status. Activation creates the `metals` row if missing, a `book_metals` row (kg, the organisation's base currency) and an active period from today.
+
 ### Domain terms
 - **Publication calendar**: the ISO weekdays (1 = Monday ... 7 = Sunday) on which a metal reference publishes, minus its holidays; a reference with no calendar row publishes on no day.
 - **Organisation** (tenant): a customer company using Hedgile; seed organisation is **Hedgile** (`org_hedgile`), also the demo tenant.
@@ -109,6 +112,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - **Test mode**: an organisation setting (`organisations.test_mode`, admin only, audited) that allows future posting dates; shown as a badge in the top bar.
 - **Provenance**: the record of why a value is what it is: trigger, automatic or manual, who, when, and for calculated values the formula with its inputs (`value_provenance`, append-only; the newest row is current).
 - **Trigger**: what caused a value: `market`, `quantity`, `quality`, `pricing_conditions` or `manual`.
+- **Book metal**: a metal the organisation keeps books for, with a base UoM, a base currency and active/inactive periods; "active" means an active period covers today.
 - **Book metal / market-only metal**: a metal with a `book_metals` row (books are kept) vs one only followed in the market; shown in another colour in Settings > Markets.
 - **Source** (of a reference): how its prices arrive (Manual, Upload, Connection; `source_type`); `source` is the publisher (LME, MB).
 - **Draft** (Laimon): what Laimon read from a document, waiting for the user to confirm.
