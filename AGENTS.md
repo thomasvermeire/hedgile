@@ -71,6 +71,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
   - `src/provenance/` — why a value is what it is: `provenanceStatement` (record in the write's batch), `getProvenance`, Zod entry, `renderCalculation`; API at `src/routes/api.provenance.ts`.
   - `src/laimon/` — the Laimon panel, Claude calls, extraction kinds, drafts.
   - `src/versioning/` — the app version (`package.json` plus the build commit, injected by Vite `define`) and the typed release list behind `/releases`.
+  - `src/calendars/` — publication calendars per metal reference: `publicationDays` / `countPublicationDays` (pure, inclusive ISO dates in UTC; the entry point for the hedging line split) and tenant-scoped, admin-only, audited editing in `calendars.server.ts`.
   - `src/config/env.ts` — the Worker settings, validated with Zod.
   - `src/db/` — ids and the audit trail.
   - `src/test/` — test doubles: D1 on Node's SQLite with the real migrations, in-memory R2, the end-to-end main-flow test.
@@ -89,6 +90,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - Menu entries without a module open a placeholder page; locked entries have no path at all.
 
 ### Domain terms
+- **Publication calendar**: the ISO weekdays (1 = Monday ... 7 = Sunday) on which a metal reference publishes, minus its holidays; a reference with no calendar row publishes on no day.
 - **Organisation** (tenant): a customer company using Hedgile; seed organisation is **Hedgile** (`org_hedgile`), also the demo tenant.
 - **Membership / role**: a user in an organisation as `admin` (settings, members) or `user`.
 - **Metal reference**: a published price series for a metal (e.g. LME Nickel Cash); Market Data > Metals lists one entry per active reference.
