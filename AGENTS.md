@@ -94,5 +94,5 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - Route types come from `react-router typegen` (`pnpm typecheck` runs it); import them from `./+types/<route>`.
 - Workers are not Node: no `fs`, no `process.env` at runtime. Settings come from `context.cloudflare.env`.
 - D1 `batch()` is atomic; use it when several writes must succeed together (e.g. a record plus its audit entry).
-- Branch previews use the same D1 database and R2 bucket as production.
+- Only `main` is deployed (team choice, 21/11: no branch previews). Check a branch locally with `pnpm dev`.
 - Prettier skips AGENTS.md (see `.prettierignore`): Laimonade replaces the standards section exactly as written.

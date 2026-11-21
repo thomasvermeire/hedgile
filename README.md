@@ -14,7 +14,7 @@ It is one **Cloudflare Worker** (`hedgileapp`): a **React Router 7** app whose p
 - **Master data**: companies and materials, created and edited per organisation.
 - **Settings**: organisation name and base currency; invite members by email and change their role.
 - **Laimon panel**: on every page; chat, or drop a PDF to get a draft with a confidence per field, edit it, and save only after confirming. The PDF is attached to the record created, and the extraction is in the audit trail.
-- **Deploy**: every push to `main` deploys to production; every other branch gets a preview URL; `pnpm db:reset:remote` puts the demo organisation back to its start state.
+- **Deploy**: every push to `main` deploys to production (other branches are not deployed); `pnpm db:reset:remote` puts the demo organisation back to its start state.
 - **Health check**: `GET /health` reports whether the Worker and its database are up.
 
 ## Install, run, test, build
@@ -72,11 +72,11 @@ One-time setup in the Cloudflare dashboard:
    - production branch: `main`
    - build command: `pnpm run build`
    - deploy command: `pnpm exec wrangler d1 migrations apply DB --remote && pnpm exec wrangler deploy`
-   - non-production branch deploy command: `pnpm exec wrangler versions upload` (a preview URL per branch)
+   - builds for non-production branches: **off** (other branches are not deployed)
 4. **Settings > Variables and Secrets**: add the secrets above, and set `LAIMONID_ISSUER`, `LAIMONID_CLIENT_ID` and `BOOTSTRAP_ADMIN_EMAILS` (in `wrangler.jsonc` or the dashboard).
-5. At LaimonID, allow `https://<your hedgileapp URL>/auth/callback` as a redirect URI (and the preview URLs, if previews need sign-in).
+5. At LaimonID, allow `https://<your hedgileapp URL>/auth/callback` as a redirect URI.
 
-After that, a merge to `main` is live in a few minutes. Branch previews share the production database and bucket.
+After that, a merge to `main` is live in a few minutes. Only `main` is deployed; check other branches locally with `pnpm dev`.
 
 ## Project structure
 
