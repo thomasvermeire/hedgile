@@ -78,6 +78,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
   - `src/test/` — test doubles: D1 on Node's SQLite with the real migrations, in-memory R2, the end-to-end main-flow test.
 - `src/settings/sections.ts` + `src/routes/settings-layout.tsx` — the Settings sub-menu; each section is `src/routes/settings.<section>.tsx`.
 - `migrations/` — D1 schema, applied in order (`pnpm db:migrate:*`). `0006_settings_foundations.sql` holds the shared F3 schema (metals, book metals and periods, reference source types, publication calendars, quality stages, organisation parameters) and seeds organisation Hedgile. `db/reset-demo.sql` — the demo start state.
+  - `src/settings/locked-content.ts`, `LockedSettings.tsx`, `ValuationOverview.tsx` — static content and components for the locked Settings pages (connections, ledgers, valuation); `valuation.server.ts` reads each company's valuation method.
 
 ### Decisions
 - Frontend and backend in one Worker and one repo (team choice, 21/11). Keep business rules in feature modules (`*.server.ts`) that do not import React Router, and keep routes thin, so an API can be split out later without rewriting logic.

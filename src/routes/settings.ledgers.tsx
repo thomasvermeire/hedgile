@@ -1,5 +1,6 @@
 import { requireTenant } from '../auth/guard.server.js';
-import { SectionStub } from '../settings/SectionStub';
+import { LockBanner, LockedCard } from '../settings/LockedSettings';
+import { ledgerSections } from '../settings/locked-content';
 import type { Route } from './+types/settings.ledgers';
 
 export function meta() {
@@ -12,5 +13,14 @@ export async function loader(args: Route.LoaderArgs) {
 }
 
 export default function Page() {
-  return <SectionStub title="Ledgers" locked />;
+  return (
+    <>
+      <p className="breadcrumb">Settings</p>
+      <h1>Ledgers</h1>
+      <LockBanner>Ledgers are locked. They arrive with the accounting story.</LockBanner>
+      {ledgerSections.map((s) => (
+        <LockedCard key={s.id} section={s} />
+      ))}
+    </>
+  );
 }
