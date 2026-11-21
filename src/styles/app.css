@@ -892,3 +892,28 @@ a.topbar__user:hover {
     gap: 4px;
   }
 }
+
+/* Quality stages */
+.stage-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.stage-details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.badge--stage-active {
+  background: #e2f3ea;
+  color: var(--known);
+}
+.badge--stage-inactive {
+  background: var(--surface);
+  color: var(--text);
+}
+.badge--stage-locked {
+  background: #fbf0d9;
+  color: var(--last-known);
+}

@@ -21,6 +21,16 @@ import { getReference, listActiveReferences } from '../master-data/references.se
 import { getTestMode, setTestMode } from '../posting/test-mode.server';
 import { changeRole, listMembers } from '../settings/members.server';
 import { getDraft, discardDraft } from '../laimon/drafts.server';
+import {
+  activeQualityStages,
+  addQualityStage,
+  getQualityStage,
+  listQualityStages,
+  newStageInput,
+  setQualityStageActive,
+  stageInput,
+  updateQualityStage,
+} from '../quality/stages.server';
 import { getProvenance, provenanceStatement } from '../provenance/provenance.server';
 import { createTestD1, runSqlFile } from '../test/d1';
 import { createTestR2 } from '../test/r2';
@@ -142,5 +152,22 @@ describe('organisation isolation', () => {
     expect((await listMaterials(hedgile)).find((m) => m.code === 'NI-CATH')?.name).toBe(
       'Nickel cathodes'
     );
+  });
+
+  it('quality stages: another organisation sees and changes none of them', async () => {
+    expect(await listQualityStages(hedgile)).toHaveLength(8);
+    expect(await listQualityStages(other)).toEqual([]);
+    expect(await activeQualityStages(other)).toEqual([]);
+    expect(await getQualityStage(other, 'qs_ta')).toBeNull();
+    expect(await setQualityStageActive(other, 'qs_ta', false)).toBe(false);
+    expect(await updateQualityStage(other, 'qs_ta', stageInput.parse({ name: 'Hacked' }))).toBe(
+      false
+    );
+    expect((await getQualityStage(hedgile, 'qs_ta'))?.status).toBe('active');
+    expect((await getQualityStage(hedgile, 'qs_ta'))?.name).toBe('Typical');
+    // The same code is free in another organisation, and stays its own.
+    await addQualityStage(other, newStageInput.parse({ code: 'TA', name: 'Their TA' }));
+    expect((await listQualityStages(other)).map((s) => s.name)).toEqual(['Their TA']);
+    expect(await listQualityStages(hedgile)).toHaveLength(8);
   });
 });
