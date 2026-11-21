@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hedgile - Nickel Trade Management</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <span>Hedgile</span>
+            </div>
+            
+            <ul class="nav-menu">
+                <!-- Market Data -->
+                <li class="nav-section">
+                    <span class="section-header">
+                        <i class="fas fa-chart-area"></i>
+                        Market Data
+                    </span>
+                    <ul class="nav-submenu">
+                        <li>
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-cube"></i>
+                                <span>Metals</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-link locked" title="Locked">
+                                <i class="fas fa-lock"></i>
+                                <span>Currencies</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Process Section -->
+                <li class="nav-section">
+                    <span class="section-header">
+                        <i class="fas fa-cogs"></i>
+                        Process
+                    </span>
+                    <ul class="nav-submenu">
+                        <!-- Purchasing -->
+                        <li class="nav-subsection">
+                            <span class="subsection-header">
+                                <i class="fas fa-shopping-cart"></i>
+                                Purchasing
+                            </span>
+                            <ul class="nav-submenu nested">
+                                <li>
+                                    <a href="#" class="nav-link locked" title="Locked">
+                                        <i class="fas fa-lock"></i>
+                                        <span>Quotes</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="nav-link">
+                                        <i class="fas fa-file-contract"></i>
+                                        <span>Contracts</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="nav-link">
+                                        <i class="fas fa-phone-alt"></i>
+                                        <span>Call-offs</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="nav-link">
+                                        <i class="fas fa-truck"></i>
+                                        <span>Deliveries</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="nav-link">
+                                        <i class="fas fa-box-open"></i>
+                                        <span>Inbound Delivery</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="nav-link">
+                                        <i class="fas fa-pallet"></i>
+                                        <span>Lots</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="nav-link locked" title="Locked">
+                                        <i class="fas fa-lock"></i>
+                                        <span>Invoices</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <!-- Sales -->
+                        <li class="nav-subsection">
+                            <span class="subsection-header">
+                                <i class="fas fa-tag"></i>
+                                Sales
+                            </span>
+                            <ul class="nav-submenu nested">
+                                <li>
+                                    <a href="#" class="nav-link locked" title="Locked">
+                                        <i class="fas fa-lock"></i>
+                                        <span>Quotes</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="nav-link">
+                                        <i class="fas fa-file-contract"></i>
+                                        <span>Contracts</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="nav-link">
+                                        <i class="fas fa-phone-alt"></i>
+                                        <span>Call-offs</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="nav-link">
+                                        <i class="fas fa-truck"></i>
+                                        <span>Deliveries</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="nav-link locked" title="Locked">
+                                        <i class="fas fa-lock"></i>
+                                        <span>Outbound Delivery</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="nav-link">
+                                        <i class="fas fa-pallet"></i>
+                                        <span>Lots</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="nav-link locked" title="Locked">
+                                        <i class="fas fa-lock"></i>
+                                        <span>Invoices</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <!-- Quality -->
+                        <li class="nav-subsection">
+                            <span class="subsection-header">
+                                <i class="fas fa-microscope"></i>
+                                Quality
+                            </span>
+                            <ul class="nav-submenu nested">
+                                <li>
+                                    <a href="#" class="nav-link">
+                                        <i class="fas fa-clipboard-list"></i>
+                                        <span>Inspection lots</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="nav-link">
+                                        <i class="fas fa-flask"></i>
+                                        <span>Analysis</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="nav-link">
+                                        <i class="fas fa-certificate"></i>
+                                        <span>Certificates of Analysis</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <!-- Hedging -->
+                        <li class="nav-subsection">
+                            <span class="subsection-header">
+                                <i class="fas fa-shield-alt"></i>
+                                Hedging
+                            </span>
+                            <ul class="nav-submenu nested">
+                                <li>
+                                    <a href="#" class="nav-link locked" title="Locked">
+                                        <i class="fas fa-lock"></i>
+                                        <span>Paper Transactions</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="nav-link">
+                                        <i class="fas fa-calculator"></i>
+                                        <span>Valuation Run</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="nav-link">
+                                        <i class="fas fa-chart-bar"></i>
+                                        <span>Reporting</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Master Data -->
+                <li class="nav-section">
+                    <span class="section-header">
+                        <i class="fas fa-database"></i>
+                        Master Data
+                    </span>
+                    <ul class="nav-submenu">
+                        <li>
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-building"></i>
+                                <span>Companies</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-layer-group"></i>
+                                <span>Materials</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-users"></i>
+                                <span>Customers</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-user-tie"></i>
+                                <span>Vendors</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Settings -->
+                <li class="nav-section">
+                    <span class="section-header">
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="header">
+                <h1>Hedgile Dashboard</h1>
+                <p>Nickel Trade Management System</p>
+            </header>
+            
+            <div class="content">
+                <h2>Welcome to Hedgile</h2>
+                <p>Select a menu item from the sidebar to get started.</p>
+                <p>Locked items (<i class="fas fa-lock"></i>) are currently unavailable and will not navigate.</p>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

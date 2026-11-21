@@ -1,0 +1,7 @@
+name = "hedgile"
+main = "src/index.js"
+compatibility_date = "2026-11-21"
+
+[site]
+bucket = "./public"
+entry-point = "workers-site"
