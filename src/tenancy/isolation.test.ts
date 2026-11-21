@@ -27,9 +27,20 @@ import {
   weekdaysInput,
 } from '../calendars/calendars.server';
 import { getReference, listActiveReferences } from '../master-data/references.server';
+import { getParameter, parameterHistory, setParameter } from '../parameters/parameters.server';
 import { getTestMode, setTestMode } from '../posting/test-mode.server';
 import { changeRole, listMembers } from '../settings/members.server';
 import { getDraft, discardDraft } from '../laimon/drafts.server';
+import {
+  activeQualityStages,
+  addQualityStage,
+  getQualityStage,
+  listQualityStages,
+  newStageInput,
+  setQualityStageActive,
+  stageInput,
+  updateQualityStage,
+} from '../quality/stages.server';
 import { getProvenance, provenanceStatement } from '../provenance/provenance.server';
 import { createTestD1, runSqlFile } from '../test/d1';
 import { createTestR2 } from '../test/r2';
@@ -144,6 +155,20 @@ describe('organisation isolation', () => {
     expect(await getTestMode(hedgile)).toBe(true);
   });
 
+  it("another organisation cannot read or change Hedgile's parameters", async () => {
+    const key = 'three_way_match_tolerance_pct';
+    expect(await getParameter(hedgile, key)).toBe(5);
+    await setParameter(other, key, 9);
+    expect(await getParameter(other, key)).toBe(9);
+    expect(await getParameter(hedgile, key)).toBe(5);
+    expect(await parameterHistory(hedgile, key)).toEqual([]);
+    await setParameter(hedgile, key, 2);
+    await setParameter(other, key, 8);
+    expect(await getParameter(hedgile, key)).toBe(2);
+    expect((await parameterHistory(hedgile, key)).map((c) => c.newValue)).toEqual([2]);
+    expect((await parameterHistory(other, key)).map((c) => c.newValue)).toEqual([8, 9]);
+  });
+
   it("each organisation's new records stay its own", async () => {
     await createCompany(other, companyInput.parse({ name: 'Rival Metals', country: 'DE' }));
     await createMaterial(other, { code: 'NI-CATH', name: 'Their cathodes', metal: 'Nickel' });
@@ -166,5 +191,20 @@ describe('organisation isolation', () => {
     const lme = await getCalendar(hedgile, 'ref_lme_ni_cash');
     expect(lme?.weekdays).toEqual([1, 2, 3, 4, 5]);
     expect(lme?.holidays).toHaveLength(8);
+  it('quality stages: another organisation sees and changes none of them', async () => {
+    expect(await listQualityStages(hedgile)).toHaveLength(8);
+    expect(await listQualityStages(other)).toEqual([]);
+    expect(await activeQualityStages(other)).toEqual([]);
+    expect(await getQualityStage(other, 'qs_ta')).toBeNull();
+    expect(await setQualityStageActive(other, 'qs_ta', false)).toBe(false);
+    expect(await updateQualityStage(other, 'qs_ta', stageInput.parse({ name: 'Hacked' }))).toBe(
+      false
+    );
+    expect((await getQualityStage(hedgile, 'qs_ta'))?.status).toBe('active');
+    expect((await getQualityStage(hedgile, 'qs_ta'))?.name).toBe('Typical');
+    // The same code is free in another organisation, and stays its own.
+    await addQualityStage(other, newStageInput.parse({ code: 'TA', name: 'Their TA' }));
+    expect((await listQualityStages(other)).map((s) => s.name)).toEqual(['Their TA']);
+    expect(await listQualityStages(hedgile)).toHaveLength(8);
   });
 });
