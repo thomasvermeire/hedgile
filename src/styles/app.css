@@ -892,3 +892,12 @@ a.topbar__user:hover {
     gap: 4px;
   }
 }
+
+/* Currencies */
+.currencies__org {
+  margin-bottom: 24px;
+}
+.currencies__edit {
+  display: grid;
+  gap: 8px;
+}

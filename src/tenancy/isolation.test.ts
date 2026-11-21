@@ -18,6 +18,7 @@ import {
   updateMaterial,
 } from '../master-data/materials.server';
 import { getReference, listActiveReferences } from '../master-data/references.server';
+import { getCurrencies, setReportingCurrency } from '../currencies/currencies.server';
 import { getTestMode, setTestMode } from '../posting/test-mode.server';
 import { changeRole, listMembers } from '../settings/members.server';
 import { getDraft, discardDraft } from '../laimon/drafts.server';
@@ -142,5 +143,16 @@ describe('organisation isolation', () => {
     expect((await listMaterials(hedgile)).find((m) => m.code === 'NI-CATH')?.name).toBe(
       'Nickel cathodes'
     );
+  });
+
+  it("another organisation cannot read or change Hedgile's currencies", async () => {
+    expect((await getCurrencies(other)).entities).toEqual([]);
+    expect(
+      await setReportingCurrency(other, {
+        companyId: 'co_hedgile_limited',
+        reportingCurrency: 'EUR',
+      })
+    ).toBe(false);
+    expect((await getCompany(hedgile, 'co_hedgile_limited'))?.reportingCurrency).toBeNull();
   });
 });

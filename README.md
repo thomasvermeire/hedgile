@@ -12,6 +12,7 @@ It is one **Cloudflare Worker** (`hedgileapp`): a **React Router 7** app whose p
 - **Menu**: Market Data, Process (Purchasing, Sales, Quality, Hedging), Master Data and Settings in the spec's order; locked entries show a lock and open nothing; Metals lists one entry per active metal reference.
 - **Shared UI kit**: type-ahead dropdowns that match any part of the value, card lists with plus (create) and pencil (edit), locks, light red backtrading rows, KNOWN / LAST KNOWN badges.
 - **Master data**: companies and materials, created and edited per organisation.
+- **Currencies**: one base currency for the organisation (locked); Settings > Currencies shows a card per legal entity with its locked base currency and its reporting currency (pencil, chosen from the ISO list, default = base currency), kept in sync with Master Data > Companies.
 - **Settings**: organisation name, base currency and test mode; add members with an initial password, change their role, set a new password for someone who forgot theirs.
 - **My account**: change your own password (signs out your other sessions).
 - **Posting dates**: every transaction keeps a system date and a posting date; the posting date defaults to today, backdated postings are flagged, and future dates are refused unless an admin turns on test mode in Settings (shown as a badge in the top bar).

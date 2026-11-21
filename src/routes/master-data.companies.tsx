@@ -8,6 +8,7 @@ import {
   listCompanies,
   updateCompany,
 } from '../master-data/companies.server.js';
+import { currencyOptions, effectiveReportingCurrency } from '../currencies/currencies';
 import { stockValuationMethodOptions } from '../master-data/companies';
 import { CompanyDetails } from '../master-data/CompanyDetails';
 import { CardList } from '../ui/CardList';
@@ -17,9 +18,6 @@ import { Lock } from '../ui/Lock';
 import { parseForm } from '../utils/forms';
 import type { Route } from './+types/master-data.companies';
 
-const currencyOptions = ['USD', 'EUR', 'GBP', 'CHF', 'CNY', 'HKD', 'JPY', 'IDR', 'AUD', 'CAD'].map(
-  (c) => ({ value: c, label: c })
-);
 const valuationOptions = stockValuationMethodOptions.map((v) => ({ value: v, label: v }));
 
 export function meta() {
@@ -213,7 +211,7 @@ export default function Companies({ loaderData, actionData }: Route.ComponentPro
               label="Reporting currency"
               name="reportingCurrency"
               options={currencyOptions}
-              defaultValue={editing?.reportingCurrency ?? undefined}
+              defaultValue={editing ? effectiveReportingCurrency(editing).code : undefined}
             />
             {errors.reportingCurrency && <p className="field__error">{errors.reportingCurrency}</p>}
             <div className="form-actions">

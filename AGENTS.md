@@ -66,6 +66,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
   - `src/tenancy/` — organisations, memberships, roles, sign-in (`signIn`, lockout, bootstrap admin).
   - `src/navigation/` — the menu (spec order, locked entries) and its icons.
   - `src/ui/` — shared UI kit: `Combobox`, `CardList`, `Lock`, `KnownBadge`, `rowClassName`, `Field`.
+  - `src/currencies/` — the ISO currency list (`currencies.ts`, browser-safe), the reporting-currency write (`currencies.server.ts`) and the Settings > Currencies cards.
   - `src/master-data/`, `src/settings/` — the first screens' data access.
   - `src/posting/` — system date / posting date rules (`postingDateSchema`, `isBackdated`, `today`) and the organisation's test mode.
   - `src/provenance/` — why a value is what it is: `provenanceStatement` (record in the write's batch), `getProvenance`, Zod entry, `renderCalculation`; API at `src/routes/api.provenance.ts`.
@@ -87,6 +88,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - Releases: a release is cut by adding its entry (changes from Laimonade's done items) at the top of `src/versioning/releases.ts` and bumping `package.json` `version` to match, in the same merge to `main`; a test checks the two agree. The Worker never calls Laimonade.
 - Logging: always through `createLogger()` in `src/utils/logger.ts`, never `console.*` directly (ESLint enforces it).
 - Menu entries without a module open a placeholder page; locked entries have no path at all.
+- Reporting currency: `companies.reporting_currency` is the only copy, read and written by both Master Data > Companies and Settings > Currencies. NULL means "follows the base currency" and shows as "USD (default)"; choosing the base currency stores NULL (also through the company form). Always read it through `effectiveReportingCurrency()`. Only admins change it; base currency is never changed per entity.
 
 ### Domain terms
 - **Organisation** (tenant): a customer company using Hedgile; seed organisation is **Hedgile** (`org_hedgile`), also the demo tenant.
