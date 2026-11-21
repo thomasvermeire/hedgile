@@ -6,12 +6,13 @@
 -- Each module adds its start data here (prices up to 31/12/2018 come with Market Data).
 
 DELETE FROM extraction_drafts WHERE organisation_id = 'org_hedgile';
+DELETE FROM value_provenance WHERE organisation_id = 'org_hedgile';
 DELETE FROM attachments WHERE organisation_id = 'org_hedgile';
 DELETE FROM companies WHERE organisation_id = 'org_hedgile';
 DELETE FROM materials WHERE organisation_id = 'org_hedgile';
 DELETE FROM metal_references WHERE organisation_id = 'org_hedgile';
 
-UPDATE organisations SET name = 'Hedgile', base_currency = 'USD' WHERE id = 'org_hedgile';
+UPDATE organisations SET name = 'Hedgile', base_currency = 'USD', test_mode = 0 WHERE id = 'org_hedgile';
 
 INSERT INTO companies (id, organisation_id, name, country, vat_number, address) VALUES
   ('co_demo_trading', 'org_hedgile', 'Hedgile Demo Trading BV', 'NL', 'NL000000000B01', 'Demo street 1, Rotterdam');

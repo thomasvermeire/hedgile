@@ -67,7 +67,10 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
   - `src/navigation/` — the menu (spec order, locked entries) and its icons.
   - `src/ui/` — shared UI kit: `Combobox`, `CardList`, `Lock`, `KnownBadge`, `rowClassName`, `Field`.
   - `src/master-data/`, `src/settings/` — the first screens' data access.
+  - `src/posting/` — system date / posting date rules (`postingDateSchema`, `isBackdated`, `today`) and the organisation's test mode.
+  - `src/provenance/` — why a value is what it is: `provenanceStatement` (record in the write's batch), `getProvenance`, Zod entry, `renderCalculation`; API at `src/routes/api.provenance.ts`.
   - `src/laimon/` — the Laimon panel, Claude calls, extraction kinds, drafts.
+  - `src/versioning/` — the app version (`package.json` plus the build commit, injected by Vite `define`) and the typed release list behind `/releases`.
   - `src/config/env.ts` — the Worker settings, validated with Zod.
   - `src/db/` — ids and the audit trail.
   - `src/test/` — test doubles: D1 on Node's SQLite with the real migrations, in-memory R2, the end-to-end main-flow test.
@@ -78,6 +81,9 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - Tenancy: every organisation-owned table has `organisation_id`, and every query on it goes through a function that takes a `Tenant` and filters on it. Never query those tables with an id alone. `src/tenancy/isolation.test.ts` checks each new read/write from a second organisation; extend it when you add one.
 - Sign-in is email and password for now (team choice, 21/11: LaimonID later). The first admin comes from the `BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD` secrets; admins add members with an initial password. An admin can never set the password of an account that is also in another organisation. 5 wrong passwords lock an account for 15 minutes; replies never say whether an email exists. A password change bumps `users.session_version`, which signs out older sessions. Membership is re-checked on every request.
 - Laimon never writes figures itself: extraction produces a draft (value, confidence, evidence per field) the user edits and confirms; only then is the object created, with the PDF attached and the extraction and confirmation in `audit_log`.
+- Posting dates: every transaction table (contracts, receipts, analyses, invoices, quotes, prices) has `system_date TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))` and `posting_date TEXT NOT NULL` (ISO `YYYY-MM-DD`, UTC). Validate input with `postingDateSchema({ testMode: await getTestMode(tenant) })` (defaults to today, past allowed, future refused outside test mode), use `PostingDateField` in forms, `PostingDates` for display, and `rowClassName({ backtrading: isBackdated(...) })` for list rows.
+- Provenance: every stored or calculated figure records provenance in the same batch as the write (`provenanceStatement`), and is shown with `ProvenanceValue`. Formulas are stored as readable text plus named inputs, never evaluated.
+- Releases: a release is cut by adding its entry (changes from Laimonade's done items) at the top of `src/versioning/releases.ts` and bumping `package.json` `version` to match, in the same merge to `main`; a test checks the two agree. The Worker never calls Laimonade.
 - Logging: always through `createLogger()` in `src/utils/logger.ts`, never `console.*` directly (ESLint enforces it).
 - Menu entries without a module open a placeholder page; locked entries have no path at all.
 
@@ -87,6 +93,11 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - **Metal reference**: a published price series for a metal (e.g. LME Nickel Cash); Market Data > Metals lists one entry per active reference.
 - **KNOWN / LAST KNOWN**: a price published for that date / the latest earlier price used because that date has none yet.
 - **Backtrading line**: a line entered with a date in the past; shown light red (`rowClassName({ backtrading: true })`).
+- **System date**: when a transaction row was written (`system_date`); set by the database, never edited.
+- **Posting date**: the date a transaction counts for (`posting_date`); defaults to today, earlier dates are backdated, later dates need test mode.
+- **Test mode**: an organisation setting (`organisations.test_mode`, admin only, audited) that allows future posting dates; shown as a badge in the top bar.
+- **Provenance**: the record of why a value is what it is: trigger, automatic or manual, who, when, and for calculated values the formula with its inputs (`value_provenance`, append-only; the newest row is current).
+- **Trigger**: what caused a value: `market`, `quantity`, `quality`, `pricing_conditions` or `manual`.
 - **Draft** (Laimon): what Laimon read from a document, waiting for the user to confirm.
 
 ### Gotchas

@@ -28,6 +28,9 @@ describe('db/reset-demo.sql', () => {
       db.prepare(
         "UPDATE organisations SET name = 'Renamed', base_currency = 'EUR' WHERE id = 'org_hedgile'"
       ),
+      db.prepare(
+        "INSERT INTO value_provenance (id, organisation_id, object_type, object_id, field, value, trigger, mode) VALUES ('p1', 'org_hedgile', 'contract', 'c1', 'price', '1', 'manual', 'manual')"
+      ),
     ]);
 
     await runSqlFile(db, 'db/reset-demo.sql');
@@ -49,6 +52,7 @@ describe('db/reset-demo.sql', () => {
     expect(await count(db, 'materials')).toBe(2);
     expect(await count(db, 'metal_references')).toBe(1);
     expect(await count(db, 'extraction_drafts')).toBe(0);
+    expect(await count(db, 'value_provenance')).toBe(0);
     expect(await count(db, 'memberships')).toBe(1);
     expect(await db.prepare("SELECT name FROM companies WHERE id = 'c_rival'").first('name')).toBe(
       'Rival data'
