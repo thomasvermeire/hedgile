@@ -60,7 +60,9 @@ INSERT INTO publication_holidays (id, organisation_id, calendar_id, date, name) 
   ('hol_lme_20190422', 'org_hedgile', 'cal_lme_ni', '2019-04-22', 'Easter Monday'),
   ('hol_lme_20190506', 'org_hedgile', 'cal_lme_ni', '2019-05-06', 'Early May bank holiday'),
   ('hol_lme_20190527', 'org_hedgile', 'cal_lme_ni', '2019-05-27', 'Spring bank holiday'),
-  ('hol_lme_20190826', 'org_hedgile', 'cal_lme_ni', '2019-08-26', 'Summer bank holiday');
+  ('hol_lme_20190826', 'org_hedgile', 'cal_lme_ni', '2019-08-26', 'Summer bank holiday'),
+  -- MB does not publish on Good Friday (April 2019 then has 7 MB days, as in the Excel model)
+  ('hol_mb_20190419', 'org_hedgile', 'cal_mb_co', '2019-04-19', 'Good Friday');
 
 -- Settings > Quality stages: TA, PA, FA active; the others locked
 INSERT INTO quality_stages (id, organisation_id, code, name, description, status, sort_order) VALUES

@@ -57,7 +57,7 @@ describe('db/reset-demo.sql', () => {
     expect(await count(db, 'book_metals')).toBe(2);
     expect(await count(db, 'book_metal_periods')).toBe(2);
     expect(await count(db, 'publication_calendars')).toBe(2);
-    expect(await count(db, 'publication_holidays')).toBe(8);
+    expect(await count(db, 'publication_holidays')).toBe(9);
     expect(await count(db, 'quality_stages')).toBe(8);
     expect(
       await db
