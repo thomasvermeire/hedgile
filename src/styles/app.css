@@ -1243,3 +1243,12 @@ a.topbar__user:hover {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+
+/* Form inputs fill their field and may shrink with it (default text inputs are ~20ch wide
+   and overflowed narrow cards, e.g. the Books metal cards). */
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-width: 0;
+}
