@@ -1,5 +1,6 @@
 import { requireTenant } from '../auth/guard.server.js';
-import { SectionStub } from '../settings/SectionStub';
+import { ConnectionGroupCard, LockBanner } from '../settings/LockedSettings';
+import { connectionGroups, connectionsIntro } from '../settings/locked-content';
 import type { Route } from './+types/settings.connections';
 
 export function meta() {
@@ -12,5 +13,14 @@ export async function loader(args: Route.LoaderArgs) {
 }
 
 export default function Page() {
-  return <SectionStub title="Connections" locked />;
+  return (
+    <>
+      <p className="breadcrumb">Settings</p>
+      <h1>Connections</h1>
+      <LockBanner>{connectionsIntro}</LockBanner>
+      {connectionGroups.map((g) => (
+        <ConnectionGroupCard key={g.id} group={g} />
+      ))}
+    </>
+  );
 }
