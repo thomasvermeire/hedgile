@@ -47,10 +47,15 @@ describe('db/reset-demo.sql', () => {
     expect(
       await db.prepare("SELECT name FROM companies WHERE organisation_id = 'org_hedgile'").all()
     ).toMatchObject({
-      results: [{ name: 'Hedgile Demo Trading BV' }],
+      results: [
+        { name: 'Hedgile Demo Trading BV' },
+        { name: 'Hedgile Limited' },
+      ],
     });
     expect(await count(db, 'materials')).toBe(2);
     expect(await count(db, 'metal_references')).toBe(1);
+    expect(await count(db, 'plants')).toBe(1);
+    expect(await count(db, 'storage_locations')).toBe(1);
     expect(await count(db, 'extraction_drafts')).toBe(0);
     expect(await count(db, 'value_provenance')).toBe(0);
     expect(await count(db, 'memberships')).toBe(1);

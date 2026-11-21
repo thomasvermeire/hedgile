@@ -16,6 +16,16 @@ import {
   listMaterials,
   updateMaterial,
 } from '../master-data/materials.server';
+import {
+  createPlant,
+  getPlant,
+  listPlants,
+  updatePlant,
+  createStorageLocation,
+  getStorageLocation,
+  listStorageLocations,
+  updateStorageLocation,
+} from '../master-data/plants.server';
 import { getReference, listActiveReferences } from '../master-data/references.server';
 import { getTestMode, setTestMode } from '../posting/test-mode.server';
 import { changeRole, listMembers } from '../settings/members.server';
@@ -86,9 +96,14 @@ describe('organisation isolation', () => {
   });
 
   it('Hedgile sees its own data', async () => {
-    expect((await listCompanies(hedgile)).map((c) => c.name)).toEqual(['Hedgile Demo Trading BV']);
+    expect((await listCompanies(hedgile)).map((c) => c.name)).toEqual([
+      'Hedgile Demo Trading BV',
+      'Hedgile Limited',
+    ]);
     expect(await listMaterials(hedgile)).toHaveLength(2);
     expect(await listActiveReferences(hedgile)).toHaveLength(1);
+    expect(await listPlants(hedgile)).toHaveLength(1);
+    expect(await listStorageLocations(hedgile)).toHaveLength(1);
     expect(await getAttachment(hedgile, 'att_h')).not.toBeNull();
     expect(await getDraft(hedgile, 'drf_h')).not.toBeNull();
     expect((await getProvenance(hedgile, 'line', 'l1', 'amount'))?.latest.value).toBe('61500');
@@ -98,6 +113,8 @@ describe('organisation isolation', () => {
     expect(await listCompanies(other)).toEqual([]);
     expect(await listMaterials(other)).toEqual([]);
     expect(await listActiveReferences(other)).toEqual([]);
+    expect(await listPlants(other)).toEqual([]);
+    expect(await listStorageLocations(other)).toEqual([]);
     expect(await listAttachments(other, 'company')).toEqual([]);
     expect((await listMembers(other)).map((m) => m.email)).toEqual(['r@x.test']);
   });
@@ -106,6 +123,8 @@ describe('organisation isolation', () => {
     expect(await getCompany(other, 'co_demo_trading')).toBeNull();
     expect(await getMaterial(other, 'mat_ni_cathode')).toBeNull();
     expect(await getReference(other, 'ref_lme_ni_cash')).toBeNull();
+    expect(await getPlant(other, 'pl_hedgile_main')).toBeNull();
+    expect(await getStorageLocation(other, 'sl_hedgile_warehouse')).toBeNull();
     expect(await getAttachment(other, 'att_h')).toBeNull();
     expect(await getDraft(other, 'drf_h')).toBeNull();
     expect(await getProvenance(other, 'line', 'l1', 'amount')).toBeNull();
@@ -123,10 +142,28 @@ describe('organisation isolation', () => {
     expect(
       await updateMaterial(other, 'mat_ni_cathode', { code: 'X', name: 'Taken', metal: 'Zinc' })
     ).toBe(false);
+    expect(
+      await updatePlant(other, 'pl_hedgile_main', {
+        companyId: 'co_demo_trading',
+        internalNumber: 'X',
+        code: 'X',
+        description: 'X',
+        address: null,
+      })
+    ).toBe(false);
+    expect(
+      await updateStorageLocation(other, 'sl_hedgile_warehouse', {
+        plantId: 'pl_hedgile_main',
+        code: 'X',
+        description: 'X',
+      })
+    ).toBe(false);
     expect(await changeRole(other, 'mem_u_h', 'user')).toBe(false);
     expect(await discardDraft(other, createTestR2(), 'drf_h')).toBe(false);
     expect((await getCompany(hedgile, 'co_demo_trading'))?.name).toBe('Hedgile Demo Trading BV');
     expect((await getMaterial(hedgile, 'mat_ni_cathode'))?.name).toBe('Nickel cathodes');
+    expect((await getPlant(hedgile, 'pl_hedgile_main'))?.code).toBe('PL-MAIN');
+    expect((await getStorageLocation(hedgile, 'sl_hedgile_warehouse'))?.code).toBe('SL-WH01');
     expect((await getDraft(hedgile, 'drf_h'))?.status).toBe('draft');
   });
 
@@ -147,9 +184,32 @@ describe('organisation isolation', () => {
       address: null,
     });
     await createMaterial(other, { code: 'NI-CATH', name: 'Their cathodes', metal: 'Nickel' });
-    expect((await listCompanies(hedgile)).map((c) => c.name)).toEqual(['Hedgile Demo Trading BV']);
+    const rivalCompany = await createCompany(other, {
+      name: 'Rival Plants',
+      country: 'DE',
+      vatNumber: null,
+      address: null,
+    });
+    const rivalPlant = await createPlant(other, {
+      companyId: rivalCompany,
+      internalNumber: 'PL001',
+      code: 'PL-RIVAL',
+      description: 'Rival Plant',
+      address: null,
+    });
+    await createStorageLocation(other, {
+      plantId: rivalPlant,
+      code: 'SL-RIVAL',
+      description: 'Rival Storage',
+    });
+    expect((await listCompanies(hedgile)).map((c) => c.name)).toEqual([
+      'Hedgile Demo Trading BV',
+      'Hedgile Limited',
+    ]);
     expect((await listMaterials(hedgile)).find((m) => m.code === 'NI-CATH')?.name).toBe(
       'Nickel cathodes'
     );
+    expect(await listPlants(hedgile)).toHaveLength(1);
+    expect(await listStorageLocations(hedgile)).toHaveLength(1);
   });
 });
