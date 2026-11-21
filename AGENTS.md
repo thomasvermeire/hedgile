@@ -66,6 +66,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
   - `src/tenancy/` — organisations, memberships, roles, sign-in (`signIn`, lockout, bootstrap admin).
   - `src/navigation/` — the menu (spec order, locked entries) and its icons.
   - `src/ui/` — shared UI kit: `Combobox`, `CardList`, `Lock`, `KnownBadge`, `rowClassName`, `Field`.
+  - `src/quality/` — quality stages (Settings > Quality stages): data access, `activeQualityStages(tenant)` for later quality modules, status badge.
   - `src/master-data/`, `src/settings/` — the first screens' data access.
   - `src/posting/` — system date / posting date rules (`postingDateSchema`, `isBackdated`, `today`) and the organisation's test mode.
   - `src/provenance/` — why a value is what it is: `provenanceStatement` (record in the write's batch), `getProvenance`, Zod entry, `renderCalculation`; API at `src/routes/api.provenance.ts`.
@@ -89,6 +90,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - Parameters live in `organisation_parameters` (text values, parsed by the registry's Zod schema; no row means the registry default). Read them with `getParameter` at the moment of use, never cache; changes are admin only and audited as `parameter.changed` with `{ key, oldValue, newValue }`. The three-way match flags a field only when its deviation is strictly more than the tolerance (exactly at it passes).
 - Logging: always through `createLogger()` in `src/utils/logger.ts`, never `console.*` directly (ESLint enforces it).
 - Menu entries without a module open a placeholder page; locked entries have no path at all.
+- Quality stages: a **locked** stage is a pre-set stage not available yet; it shows a lock and users cannot activate or deactivate it (only active <-> inactive for unlocked stages). Locked stages can still be renamed or reordered. Stages users add start active; codes are two uppercase letters, unique per organisation. Later modules read `activeQualityStages(tenant)`.
 
 ### Domain terms
 - **Organisation** (tenant): a customer company using Hedgile; seed organisation is **Hedgile** (`org_hedgile`), also the demo tenant.
