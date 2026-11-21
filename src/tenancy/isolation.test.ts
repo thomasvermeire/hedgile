@@ -191,6 +191,8 @@ describe('organisation isolation', () => {
     const lme = await getCalendar(hedgile, 'ref_lme_ni_cash');
     expect(lme?.weekdays).toEqual([1, 2, 3, 4, 5]);
     expect(lme?.holidays).toHaveLength(8);
+  });
+
   it('quality stages: another organisation sees and changes none of them', async () => {
     expect(await listQualityStages(hedgile)).toHaveLength(8);
     expect(await listQualityStages(other)).toEqual([]);
