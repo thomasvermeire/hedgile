@@ -1,6 +1,6 @@
 {
   "name": "hedgile",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Hedgile: metal contract, delivery and hedging management for trading teams. One Cloudflare Worker: React Router 7 frontend and backend together.",
   "packageManager": "pnpm@9.12.0",
   "type": "module",
