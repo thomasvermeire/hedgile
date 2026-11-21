@@ -17,6 +17,15 @@ import {
   listMaterials,
   updateMaterial,
 } from '../master-data/materials.server';
+import {
+  addHoliday,
+  getCalendar,
+  holidayInput,
+  listCalendars,
+  removeHoliday,
+  setWeekdays,
+  weekdaysInput,
+} from '../calendars/calendars.server';
 import { getReference, listActiveReferences } from '../master-data/references.server';
 import { getParameter, parameterHistory, setParameter } from '../parameters/parameters.server';
 import { getTestMode, setTestMode } from '../posting/test-mode.server';
@@ -167,6 +176,21 @@ describe('organisation isolation', () => {
     expect((await listMaterials(hedgile)).find((m) => m.code === 'NI-CATH')?.name).toBe(
       'Nickel cathodes'
     );
+  });
+
+  it("another organisation cannot read or change Hedgile's publication calendars", async () => {
+    expect(await getCalendar(other, 'ref_lme_ni_cash')).toBeNull();
+    expect(await listCalendars(other)).toEqual([]);
+    expect(
+      await setWeekdays(other, 'ref_lme_ni_cash', weekdaysInput.parse({ weekdays: [1] }))
+    ).toBe(false);
+    expect(
+      await addHoliday(other, 'ref_lme_ni_cash', holidayInput.parse({ date: '2019-06-03' }))
+    ).toBe(false);
+    expect(await removeHoliday(other, 'ref_lme_ni_cash', '2019-01-01')).toBe(false);
+    const lme = await getCalendar(hedgile, 'ref_lme_ni_cash');
+    expect(lme?.weekdays).toEqual([1, 2, 3, 4, 5]);
+    expect(lme?.holidays).toHaveLength(8);
   });
 
   it('quality stages: another organisation sees and changes none of them', async () => {

@@ -13,6 +13,7 @@ It is one **Cloudflare Worker** (`hedgileapp`): a **React Router 7** app whose p
 - **Shared UI kit**: type-ahead dropdowns that match any part of the value, card lists with plus (create) and pencil (edit), locks, light red backtrading rows, KNOWN / LAST KNOWN badges.
 - **Master data**: companies and materials, created and edited per organisation.
 - **Settings**: organisation name, base currency and test mode; add members with an initial password, change their role, set a new password for someone who forgot theirs.
+- **Publication calendars**: Settings > Calendars shows, per metal source, the weekdays it publishes and its holidays (admins edit them; seeded from the Excel quote table) and counts the publishing days between two dates; `publicationDays` in `src/calendars/` is what the hedging line split calls.
 - **My account**: change your own password (signs out your other sessions).
 - **Posting dates**: every transaction keeps a system date and a posting date; the posting date defaults to today, backdated postings are flagged, and future dates are refused unless an admin turns on test mode in Settings (shown as a badge in the top bar).
 - **Laimon panel**: on every page; chat, or drop a PDF to get a draft with a confidence per field, edit it, and save only after confirming. The PDF is attached to the record created, and the extraction is in the audit trail.

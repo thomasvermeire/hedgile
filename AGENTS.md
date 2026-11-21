@@ -72,6 +72,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
   - `src/provenance/` — why a value is what it is: `provenanceStatement` (record in the write's batch), `getProvenance`, Zod entry, `renderCalculation`; API at `src/routes/api.provenance.ts`.
   - `src/laimon/` — the Laimon panel, Claude calls, extraction kinds, drafts.
   - `src/versioning/` — the app version (`package.json` plus the build commit, injected by Vite `define`) and the typed release list behind `/releases`.
+  - `src/calendars/` — publication calendars per metal reference: `publicationDays` / `countPublicationDays` (pure, inclusive ISO dates in UTC; the entry point for the hedging line split) and tenant-scoped, admin-only, audited editing in `calendars.server.ts`.
   - `src/parameters/` — organisation parameters: a typed registry (one entry per parameter), `getParameter`/`setParameter`/`parameterHistory`, `threeWayMatchTolerance`, `exceedsTolerance`.
   - `src/config/env.ts` — the Worker settings, validated with Zod.
   - `src/db/` — ids and the audit trail.
@@ -94,6 +95,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - Quality stages: a **locked** stage is a pre-set stage not available yet; it shows a lock and users cannot activate or deactivate it (only active <-> inactive for unlocked stages). Locked stages can still be renamed or reordered. Stages users add start active; codes are two uppercase letters, unique per organisation. Later modules read `activeQualityStages(tenant)`.
 
 ### Domain terms
+- **Publication calendar**: the ISO weekdays (1 = Monday ... 7 = Sunday) on which a metal reference publishes, minus its holidays; a reference with no calendar row publishes on no day.
 - **Organisation** (tenant): a customer company using Hedgile; seed organisation is **Hedgile** (`org_hedgile`), also the demo tenant.
 - **Membership / role**: a user in an organisation as `admin` (settings, members) or `user`.
 - **Metal reference**: a published price series for a metal (e.g. LME Nickel Cash); Market Data > Metals lists one entry per active reference.
