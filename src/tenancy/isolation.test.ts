@@ -9,6 +9,7 @@ import {
   getCompany,
   listCompanies,
   updateCompany,
+  type CompanyInput,
 } from '../master-data/companies.server';
 import {
   createMaterial,
@@ -86,7 +87,10 @@ describe('organisation isolation', () => {
   });
 
   it('Hedgile sees its own data', async () => {
-    expect((await listCompanies(hedgile)).map((c) => c.name)).toEqual(['Hedgile Demo Trading BV']);
+    expect((await listCompanies(hedgile)).map((c) => c.name)).toEqual([
+      'Hedgile Demo Trading BV',
+      'Hedgile Limited',
+    ]);
     expect(await listMaterials(hedgile)).toHaveLength(2);
     expect(await listActiveReferences(hedgile)).toHaveLength(1);
     expect(await getAttachment(hedgile, 'att_h')).not.toBeNull();
@@ -118,7 +122,7 @@ describe('organisation isolation', () => {
         country: null,
         vatNumber: null,
         address: null,
-      })
+      } as CompanyInput)
     ).toBe(false);
     expect(
       await updateMaterial(other, 'mat_ni_cathode', { code: 'X', name: 'Taken', metal: 'Zinc' })
@@ -145,9 +149,12 @@ describe('organisation isolation', () => {
       country: 'DE',
       vatNumber: null,
       address: null,
-    });
+    } as CompanyInput);
     await createMaterial(other, { code: 'NI-CATH', name: 'Their cathodes', metal: 'Nickel' });
-    expect((await listCompanies(hedgile)).map((c) => c.name)).toEqual(['Hedgile Demo Trading BV']);
+    expect((await listCompanies(hedgile)).map((c) => c.name)).toEqual([
+      'Hedgile Demo Trading BV',
+      'Hedgile Limited',
+    ]);
     expect((await listMaterials(hedgile)).find((m) => m.code === 'NI-CATH')?.name).toBe(
       'Nickel cathodes'
     );

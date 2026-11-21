@@ -14,8 +14,18 @@ DELETE FROM metal_references WHERE organisation_id = 'org_hedgile';
 
 UPDATE organisations SET name = 'Hedgile', base_currency = 'USD', test_mode = 0 WHERE id = 'org_hedgile';
 
-INSERT INTO companies (id, organisation_id, name, country, vat_number, address) VALUES
-  ('co_demo_trading', 'org_hedgile', 'Hedgile Demo Trading BV', 'NL', 'NL000000000B01', 'Demo street 1, Rotterdam');
+INSERT INTO companies (id, organisation_id, name, legal_name, commercial_name, country, 
+  vat_number, registration_number, address_line_1, address_line_2, city, postal_code, 
+  state_province, website, contact_person, contact_email, contact_phone, 
+  stock_valuation_method, reporting_currency, address) VALUES
+  ('co_hedgile_limited', 'org_hedgile', 'Hedgile Limited', 'Hedgile Limited', 'Hedgile Limited', 'HK',
+   NULL, NULL, 'Suite 2108, 21/F', 'Two Exchange Square, 8 Connaught Place', 'Central', NULL,
+   'Hong Kong', NULL, 'Ingrid Ingot', NULL, NULL,
+   'WAVG', NULL, 'Suite 2108, 21/F, Two Exchange Square, 8 Connaught Place, Central, Hong Kong'),
+  ('co_demo_trading', 'org_hedgile', 'Hedgile Demo Trading BV', NULL, NULL, 'NL',
+   'NL000000000B01', NULL, 'Demo street 1', NULL, 'Rotterdam', NULL,
+   NULL, NULL, NULL, NULL, NULL,
+   NULL, NULL, 'Demo street 1, Rotterdam');
 
 INSERT INTO materials (id, organisation_id, code, name, metal) VALUES
   ('mat_ni_cathode', 'org_hedgile', 'NI-CATH', 'Nickel cathodes', 'Nickel'),

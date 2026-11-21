@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { listAttachments } from '../master-data/attachments.server';
-import { listCompanies } from '../master-data/companies.server';
+import { listCompanies, type CompanyInput } from '../master-data/companies.server';
 import { seedOrgWithUser } from '../test/context';
 import { createTestD1 } from '../test/d1';
 import { createTestR2 } from '../test/r2';
@@ -89,7 +89,7 @@ describe('Laimon drafts', () => {
       country: 'DE',
       vatNumber: 'DE123456789',
       address: 'Hafenstr. 1, Hamburg',
-    });
+    } as CompanyInput);
     const [company] = await listCompanies(tenant);
     expect(company).toMatchObject({ id: companyId, vatNumber: 'DE123456789' });
     const [attachment] = await listAttachments(tenant, 'company');
@@ -113,7 +113,7 @@ describe('Laimon drafts', () => {
 
   it('a draft can be confirmed only once', async () => {
     const id = await createDraft(tenant, bucket, fakeExtractor, companyKind, pdf());
-    const input = { name: 'Rival', country: null, vatNumber: null, address: null };
+    const input = { name: 'Rival', country: null, vatNumber: null, address: null } as CompanyInput;
     await confirmCompanyDraft(tenant, id, input);
     await expect(confirmCompanyDraft(tenant, id, input)).rejects.toThrow(DraftClosedError);
     expect(await listCompanies(tenant)).toHaveLength(1);
