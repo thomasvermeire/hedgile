@@ -1,72 +1,40 @@
 import js from '@eslint/js';
-import tseslint from '@typescript-eslint/eslint-plugin';
-import parser from '@typescript-eslint/parser';
-import prettier from 'eslint-plugin-prettier';
+import prettier from 'eslint-config-prettier';
+import reactHooks from 'eslint-plugin-react-hooks';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
 
-export default [
+export default tseslint.config(
+  {
+    ignores: [
+      'build/**',
+      '.react-router/**',
+      '.wrangler/**',
+      'node_modules/**',
+      'worker-configuration.d.ts',
+      'coverage/**',
+    ],
+  },
   js.configs.recommended,
+  ...tseslint.configs.recommended,
   {
-    files: ['**/*.ts'],
-    ignores: ['**/*.test.ts', '**/*.spec.ts'],
-    plugins: {
-      '@typescript-eslint': tseslint,
-      prettier,
-    },
-    languageOptions: {
-      globals: {
-        ...tseslint.configs.recommended.globals,
-        process: 'readonly',
-        console: 'readonly',
-        crypto: 'readonly',
-      },
-      parser,
-      parserOptions: {
-        ecmaVersion: 'latest',
-        sourceType: 'module',
-        project: './tsconfig.json',
-      },
-    },
+    files: ['**/*.{ts,tsx}'],
+    languageOptions: { globals: { ...globals.browser, ...globals.node } },
+    plugins: { 'react-hooks': reactHooks },
     rules: {
-      ...tseslint.configs.recommended.rules,
-      '@typescript-eslint/explicit-function-return-type': 'error',
+      ...reactHooks.configs.recommended.rules,
       '@typescript-eslint/no-explicit-any': 'error',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      'prettier/prettier': 'error',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+      'no-console': 'error',
     },
   },
   {
-    files: ['**/*.test.ts', '**/*.spec.ts'],
-    plugins: {
-      '@typescript-eslint': tseslint,
-      prettier,
-    },
-    languageOptions: {
-      globals: {
-        ...tseslint.configs.recommended.globals,
-        process: 'readonly',
-        console: 'readonly',
-        crypto: 'readonly',
-        vi: 'readonly',
-        describe: 'readonly',
-        it: 'readonly',
-        expect: 'readonly',
-        beforeEach: 'readonly',
-        afterEach: 'readonly',
-        NodeJS: 'readonly',
-      },
-      parser,
-      parserOptions: {
-        ecmaVersion: 'latest',
-        sourceType: 'module',
-        project: './tsconfig.json',
-      },
-    },
-    rules: {
-      ...tseslint.configs.recommended.rules,
-      '@typescript-eslint/explicit-function-return-type': 'off',
-      '@typescript-eslint/no-explicit-any': 'error',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      'prettier/prettier': 'error',
-    },
+    // The logger is the one place allowed to write to the console.
+    files: ['src/utils/logger.ts', 'src/utils/logger.test.ts'],
+    rules: { 'no-console': 'off' },
   },
-];
+  prettier
+);

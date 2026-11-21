@@ -3,3 +3,6 @@ AGENTS.md
 pnpm-lock.yaml
 dist
 coverage
+worker-configuration.d.ts
+.react-router
+build

@@ -1,4 +1,4 @@
-import { z, ZodError, ZodIssue } from 'zod';
+import { z, ZodError, type ZodIssue } from 'zod';
 
 /**
  * Custom error class for validation errors.

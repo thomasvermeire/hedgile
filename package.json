@@ -1,43 +1,58 @@
 {
   "name": "hedgile",
   "version": "0.1.0",
-  "description": "Hedgile helps small trading teams manage nickel trades from contract to final invoice, giving them a clear view of their daily positions and valuations.",
+  "description": "Hedgile: metal contract, delivery and hedging management for trading teams. One Cloudflare Worker: React Router 7 frontend and backend together.",
   "packageManager": "pnpm@9.12.0",
   "type": "module",
   "scripts": {
-    "lint": "eslint src --ext .ts,.tsx",
-    "typecheck": "tsc --noEmit",
+    "dev": "react-router dev",
+    "build": "react-router build",
+    "preview": "pnpm run build && vite preview",
+    "start": "wrangler dev",
+    "lint": "eslint .",
+    "typecheck": "react-router typegen && tsc",
     "test": "vitest run",
-    "build": "tsc -p tsconfig.build.json",
-    "dev": "vitest watch",
-    "start": "node dist/index.js"
+    "test:watch": "vitest",
+    "cf-typegen": "wrangler types --strict-vars=false",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
+    "db:reset:local": "wrangler d1 execute DB --local --file=db/reset-demo.sql",
+    "db:reset:remote": "wrangler d1 execute DB --remote --file=db/reset-demo.sql",
+    "deploy": "pnpm run build && wrangler d1 migrations apply DB --remote && wrangler deploy"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.12.0",
+    "isbot": "^5.2.3",
+    "jose": "^6.2.18",
+    "lucide-react": "^1.77.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router": "^7.18.6",
     "zod": "^4.6.7"
   },
+  "license": "UNLICENSED",
+  "private": true,
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.70.1",
     "@eslint/js": "^9.39.5",
-    "@types/node": "^22.20.5",
-    "@typescript-eslint/eslint-plugin": "^8.73.0",
-    "@typescript-eslint/parser": "^8.73.0",
+    "@react-router/dev": "^7.18.6",
+    "@testing-library/jest-dom": "^8.0.0",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.13",
+    "@types/node": "^22",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@vitest/coverage-v8": "^5.1.1",
     "eslint": "^9.39.5",
-    "eslint-config-prettier": "^9.1.2",
-    "eslint-plugin-prettier": "^5.5.7",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.14.0",
+    "jsdom": "^31",
     "prettier": "^3.10.1",
     "typescript": "^5.9.3",
-    "vitest": "^5.1.1"
-  },
-  "engines": {
-    "node": ">=22.0.0"
-  },
-  "keywords": [
-    "trading",
-    "nickel",
-    "commodities",
-    "portfolio",
-    "valuation"
-  ],
-  "author": "",
-  "license": "ISC"
+    "typescript-eslint": "^8.73.0",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1",
+    "wrangler": "^4.166.0"
+  }
 }

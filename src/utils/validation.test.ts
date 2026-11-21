@@ -29,7 +29,7 @@ describe('Validation Utilities', () => {
       expect(error.message).toBe('Test error');
       expect(error.statusCode).toBe(400);
       expect(error.issues).toHaveLength(1);
-      expect(error.issues[0].path).toEqual(['name']);
+      expect(error.issues[0]?.path).toEqual(['name']);
     });
 
     it('should convert to JSON', () => {

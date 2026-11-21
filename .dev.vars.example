@@ -1,0 +1,19 @@
+# Local settings for `pnpm dev` / `wrangler dev`. Copy to .dev.vars (git-ignored).
+# In production, set the secrets in the Cloudflare dashboard (Worker > Settings >
+# Variables and Secrets) or with `pnpm exec wrangler secret put NAME`.
+APP_ENV=development
+LOG_LEVEL=debug
+
+# LaimonID (OpenID Connect). Register http://localhost:5173/auth/callback as a redirect URI.
+LAIMONID_ISSUER=https://id.example.com
+LAIMONID_CLIENT_ID=hedgile-local
+LAIMONID_CLIENT_SECRET=change-me
+
+# Signs the session cookie: at least 32 random characters (openssl rand -hex 32).
+SESSION_SECRET=0123456789abcdef0123456789abcdef
+
+# Comma-separated emails that become admin of organisation Hedgile on first sign-in.
+BOOTSTRAP_ADMIN_EMAILS=admin@example.com
+
+# Laimon panel (chat and PDF extraction). Leave empty to switch the panel off.
+ANTHROPIC_API_KEY=

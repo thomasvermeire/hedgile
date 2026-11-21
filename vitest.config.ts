@@ -1,21 +1,17 @@
 import { defineConfig } from 'vitest/config';
 
+// Tests run outside the Worker: server code against a D1 stand-in (src/test/d1.ts),
+// components in jsdom. Vite's Cloudflare and React Router plugins are not loaded here.
 export default defineConfig({
   test: {
-    globals: true,
+    include: ['src/**/*.test.{ts,tsx}'],
     environment: 'node',
-    root: './',
-    include: ['src/**/*.{test,spec}.ts'],
+    setupFiles: ['src/test/setup.ts'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      include: ['src/**/*.ts'],
-      exclude: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.test.*', 'src/test/**'],
     },
   },
-  resolve: {
-    alias: {
-      '@': '/src',
-    },
-  },
+  resolve: { tsconfigPaths: true },
 });

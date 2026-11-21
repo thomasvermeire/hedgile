@@ -48,41 +48,51 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 
 ## This project
 
-<!-- Written by the coding agent on the setup run, and kept current by every change that makes it untrue. Short and specific. -->
+<!-- Kept current by every change that makes it untrue. Short and specific. -->
 
 ### Stack
-- TypeScript 5.x in strict mode, Node.js 22.x, pnpm 9.x
-- ESLint with @typescript-eslint/recommended and @typescript-eslint/recommended-requiring-type-checking
-- Prettier for code formatting
-- Vitest for unit and end-to-end testing
-- Zod for schema validation and environment variable parsing (a runtime dependency; everything else is dev-only)
+- One Cloudflare Worker (`hedgileapp`) serves everything: React Router 7 in framework mode (React 19 pages plus server loaders/actions) and the static assets. Built with Vite 8 and `@cloudflare/vite-plugin`.
+- Data: Cloudflare D1 (SQLite) bound as `DB`; files: R2 bound as `ATTACHMENTS`. Both in `wrangler.jsonc`.
+- Sign-in: LaimonID over OpenID Connect (authorization code + PKCE, ID token checked with `jose`); signed cookie sessions.
+- Laimon: Claude API (`@anthropic-ai/sdk`, model in `LAIMON_MODEL`, server-side refusal fallback on).
+- TypeScript strict, Zod 4 for every input, Vitest 5 (+ Testing Library/jsdom for components), ESLint 9 + typescript-eslint, Prettier, pnpm 9, Node 22.
 
 ### Layout
-- `src/` — application code grouped by feature: `config/`, `types/`, `utils/`
-- `src/config/` — environment variable schemas and validation
-- `src/types/` — domain type definitions (Trade, Position, Valuation, etc.)
-- `src/utils/` — shared utilities (validation helpers, error classes, the logger)
-- Each `.ts` file has a corresponding `.test.ts` file with its unit tests
-- `src/index.ts` — main entry point that exports the public API; it calls `initialize()` only when run directly (`pnpm start`), not when imported
+- `workers/app.ts` — the Worker entry; hands requests to React Router with `context.cloudflare.env`.
+- `src/routes.ts` — every URL. `src/routes/*` — one file per route (thin: check input, call a feature module, return).
+- `src/root.tsx`, `src/entry.server.tsx` — HTML shell, error page, streaming render.
+- Feature folders, each with its tests next to it:
+  - `src/auth/` — LaimonID OIDC client, session cookies, `requireTenant` (the guard every signed-in route calls first).
+  - `src/tenancy/` — organisations, memberships, roles, sign-in resolution.
+  - `src/navigation/` — the menu (spec order, locked entries) and its icons.
+  - `src/ui/` — shared UI kit: `Combobox`, `CardList`, `Lock`, `KnownBadge`, `rowClassName`, `Field`.
+  - `src/master-data/`, `src/settings/` — the first screens' data access.
+  - `src/laimon/` — the Laimon panel, Claude calls, extraction kinds, drafts.
+  - `src/config/env.ts` — the Worker settings, validated with Zod.
+  - `src/db/` — ids and the audit trail.
+  - `src/test/` — test doubles: D1 on Node's SQLite with the real migrations, in-memory R2, a fake LaimonID, the end-to-end main-flow test.
+- `migrations/` — D1 schema, applied in order (`pnpm db:migrate:*`). `db/reset-demo.sql` — the demo start state.
 
 ### Decisions
-- TypeScript strict mode: catch type errors early and prevent `any` usage
-- pnpm: faster, more efficient dependency management with strict lockfile
-- Zod for validation: type-safe schema validation that infer Types from schemas
-- Vitest over Jest: native ESM support, faster, built-in TypeScript support
-- Co-located tests: each module's tests live next to it in the same directory
-- Logging: always through `createLogger()` in `src/utils/logger.ts`, never `console.*` directly, so `LOG_LEVEL` applies everywhere
-- `src/types/trade.ts` is a first sketch of the trading model, not a decision: the feature stories may reshape it
+- Frontend and backend in one Worker and one repo (team choice, 21/11). Keep business rules in feature modules (`*.server.ts`) that do not import React Router, and keep routes thin, so an API can be split out later without rewriting logic.
+- Tenancy: every organisation-owned table has `organisation_id`, and every query on it goes through a function that takes a `Tenant` and filters on it. Never query those tables with an id alone. `src/tenancy/isolation.test.ts` checks each new read/write from a second organisation; extend it when you add one.
+- Sign-in is LaimonID only. A person joins an organisation by an invitation for their verified email, or by being listed in `BOOTSTRAP_ADMIN_EMAILS` (joins Hedgile as admin). Membership is re-checked on every request.
+- Laimon never writes figures itself: extraction produces a draft (value, confidence, evidence per field) the user edits and confirms; only then is the object created, with the PDF attached and the extraction and confirmation in `audit_log`.
+- Logging: always through `createLogger()` in `src/utils/logger.ts`, never `console.*` directly (ESLint enforces it).
+- Menu entries without a module open a placeholder page; locked entries have no path at all.
 
 ### Domain terms
-- **Trade**: A nickel buy or sell transaction with quantity, price, dates, and status
-- **Position**: Daily summary showing bought, sold, and net quantities with average prices
-- **Valuation**: Calculation of market value and profit/loss (realized and unrealized)
-- **Contract**: Identifier for a trade agreement or contract
-- **Counterparty**: The other party in a trade transaction
+- **Organisation** (tenant): a customer company using Hedgile; seed organisation is **Hedgile** (`org_hedgile`), also the demo tenant.
+- **Membership / role**: a user in an organisation as `admin` (settings, members) or `user`.
+- **Metal reference**: a published price series for a metal (e.g. LME Nickel Cash); Market Data > Metals lists one entry per active reference.
+- **KNOWN / LAST KNOWN**: a price published for that date / the latest earlier price used because that date has none yet.
+- **Backtrading line**: a line entered with a date in the past; shown light red (`rowClassName({ backtrading: true })`).
+- **Draft** (Laimon): what Laimon read from a document, waiting for the user to confirm.
 
 ### Gotchas
-- `crypto.randomUUID()` requires Node.js global `crypto` — works in Node 22, may need polyfill in older versions
-- `pnpm run build` uses `tsconfig.build.json`, which leaves the test files out of `dist/`; `tsconfig.json` still covers them for type checking
-- Prettier skips AGENTS.md (see `.prettierignore`): Laimonade replaces the standards section exactly as written
-- ESLint `recommended-requiring-type-checking` rules need TypeScript type info — requires `project` setting in parserOptions
+- After changing `wrangler.jsonc`, run `pnpm cf-typegen` and commit `worker-configuration.d.ts`. Secrets are typed in `src/env.d.ts`.
+- Route types come from `react-router typegen` (`pnpm typecheck` runs it); import them from `./+types/<route>`.
+- Workers are not Node: no `fs`, no `process.env` at runtime. Settings come from `context.cloudflare.env`.
+- D1 `batch()` is atomic; use it when several writes must succeed together (e.g. a record plus its audit entry).
+- Branch previews use the same D1 database and R2 bucket as production.
+- Prettier skips AGENTS.md (see `.prettierignore`): Laimonade replaces the standards section exactly as written.
