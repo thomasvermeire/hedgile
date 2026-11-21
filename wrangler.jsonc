@@ -23,7 +23,7 @@
     {
       "binding": "DB",
       "database_name": "hedgile-db",
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "database_id": "b7fa785e-6140-46a9-a279-4ceca1dbcc82",
       "migrations_dir": "migrations",
     },
   ],
