@@ -26,6 +26,7 @@ It is one **Cloudflare Worker** (`hedgileapp`): a **React Router 7** app whose p
 - **Parameters** (Settings): the three-way-match tolerance in % (default 5%), changed by admins only with each change logged (who, when, old and new value) and shown as history; the match reads the current value each time it runs.
 - **Deploy**: every push to `main` deploys to production (other branches are not deployed); `pnpm db:reset:remote` puts the demo organisation back to its start state.
 - **Versions**: the app shows its version and build commit at the bottom of the menu; `/releases` lists each release with the stories, bugs and improvements that changed since the previous one.
+- **Units**: kg, lb and mt conversions with exact decimal arithmetic (1 kg = 2.20462262 lb); values round to 2 decimals and quantities to 5 only at the end of a calculation; a live converter on Settings > Units.
 - **Health check**: `GET /health` reports whether the Worker and its database are up.
 
 ## Install, run, test, build

@@ -1,5 +1,5 @@
 import { requireTenant } from '../auth/guard.server.js';
-import { SectionStub } from '../settings/SectionStub';
+import { UnitsPage } from '../units/UnitsPage';
 import type { Route } from './+types/settings.units';
 
 export function meta() {
@@ -11,6 +11,6 @@ export async function loader(args: Route.LoaderArgs) {
   return null;
 }
 
-export default function Page() {
-  return <SectionStub title="Units of measure" />;
+export default function SettingsUnits() {
+  return <UnitsPage />;
 }

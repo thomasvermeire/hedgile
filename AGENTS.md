@@ -66,6 +66,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
   - `src/tenancy/` — organisations, memberships, roles, sign-in (`signIn`, lockout, bootstrap admin).
   - `src/navigation/` — the menu (spec order, locked entries) and its icons.
   - `src/ui/` — shared UI kit: `Combobox`, `CardList`, `Lock`, `KnownBadge`, `rowClassName`, `Field`.
+  - `src/units/` — pure unit conversion (kg, lb, mt) and exact decimal arithmetic with rounding; the Units settings page.
   - `src/currencies/` — the ISO currency list (`currencies.ts`, browser-safe), the reporting-currency write (`currencies.server.ts`) and the Settings > Currencies cards.
   - `src/quality/` — quality stages (Settings > Quality stages): data access, `activeQualityStages(tenant)` for later quality modules, status badge.
   - `src/master-data/`, `src/settings/` — the first screens' data access.
@@ -93,6 +94,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - Releases: a release is cut by adding its entry (changes from Laimonade's done items) at the top of `src/versioning/releases.ts` and bumping `package.json` `version` to match, in the same merge to `main`; a test checks the two agree. The Worker never calls Laimonade.
 - Parameters live in `organisation_parameters` (text values, parsed by the registry's Zod schema; no row means the registry default). Read them with `getParameter` at the moment of use, never cache; changes are admin only and audited as `parameter.changed` with `{ key, oldValue, newValue }`. The three-way match flags a field only when its deviation is strictly more than the tolerance (exactly at it passes).
 - Logging: always through `createLogger()` in `src/utils/logger.ts`, never `console.*` directly (ESLint enforces it).
+- Quantities and values: convert with `src/units` (`convert`, exact decimals, no floats) and round only at the end of a calculation (`roundQuantity` 5 decimals, `roundValue` 2, half up). Never round intermediate steps.
 - Menu entries without a module open a placeholder page; locked entries have no path at all.
 - Reporting currency: `companies.reporting_currency` is the only copy, read and written by both Master Data > Companies and Settings > Currencies. NULL means "follows the base currency" and shows as "USD (default)"; choosing the base currency stores NULL (also through the company form). Always read it through `effectiveReportingCurrency()`. Only admins change it; base currency is never changed per entity.
 - Metals: `src/markets/` owns `metals` and the references of `metal_references`. A metal is in use (cannot be deleted) when `metalUsage(tenant, metalId)` returns reasons; later modules add their reasons there. Renaming a metal also updates `metal_references.metal`, which the menu shows.
