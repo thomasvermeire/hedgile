@@ -1,6 +1,7 @@
 import { Pencil } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
+import { ReportingCurrencyValue } from '../currencies/ReportingCurrencyValue';
 import { Lock } from '../ui/Lock';
 import type { Company } from './companies.server';
 
@@ -90,7 +91,7 @@ export function CompanyDetails({
         label="Reporting currency"
         value={
           <span className="inline-actions">
-            {c.reportingCurrency ?? <span className="muted">Not set</span>}
+            <ReportingCurrencyValue company={c} />
             <Link
               to={`?edit=${c.id}`}
               className="icon-link"

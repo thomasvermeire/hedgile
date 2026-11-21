@@ -67,16 +67,22 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
   - `src/navigation/` — the menu (spec order, locked entries) and its icons.
   - `src/ui/` — shared UI kit: `Combobox`, `CardList`, `Lock`, `KnownBadge`, `rowClassName`, `Field`.
   - `src/units/` — pure unit conversion (kg, lb, mt) and exact decimal arithmetic with rounding; the Units settings page.
+  - `src/currencies/` — the ISO currency list (`currencies.ts`, browser-safe), the reporting-currency write (`currencies.server.ts`) and the Settings > Currencies cards.
+  - `src/quality/` — quality stages (Settings > Quality stages): data access, `activeQualityStages(tenant)` for later quality modules, status badge.
   - `src/master-data/`, `src/settings/` — the first screens' data access.
+  - `src/books/` — Settings > Books: book metals and their periods (`books.server.ts`), pure period rules (`periods.ts`), the periodic table data (`elements.ts`) and picker, UoM/currency lists (`lists.ts`).
   - `src/posting/` — system date / posting date rules (`postingDateSchema`, `isBackdated`, `today`) and the organisation's test mode.
   - `src/provenance/` — why a value is what it is: `provenanceStatement` (record in the write's batch), `getProvenance`, Zod entry, `renderCalculation`; API at `src/routes/api.provenance.ts`.
   - `src/laimon/` — the Laimon panel, Claude calls, extraction kinds, drafts.
   - `src/versioning/` — the app version (`package.json` plus the build commit, injected by Vite `define`) and the typed release list behind `/releases`.
+  - `src/calendars/` — publication calendars per metal reference: `publicationDays` / `countPublicationDays` (pure, inclusive ISO dates in UTC; the entry point for the hedging line split) and tenant-scoped, admin-only, audited editing in `calendars.server.ts`.
+  - `src/parameters/` — organisation parameters: a typed registry (one entry per parameter), `getParameter`/`setParameter`/`parameterHistory`, `threeWayMatchTolerance`, `exceedsTolerance`.
   - `src/config/env.ts` — the Worker settings, validated with Zod.
   - `src/db/` — ids and the audit trail.
   - `src/test/` — test doubles: D1 on Node's SQLite with the real migrations, in-memory R2, the end-to-end main-flow test.
 - `src/settings/sections.ts` + `src/routes/settings-layout.tsx` — the Settings sub-menu; each section is `src/routes/settings.<section>.tsx`.
 - `migrations/` — D1 schema, applied in order (`pnpm db:migrate:*`). `0006_settings_foundations.sql` holds the shared F3 schema (metals, book metals and periods, reference source types, publication calendars, quality stages, organisation parameters) and seeds organisation Hedgile. `db/reset-demo.sql` — the demo start state.
+  - `src/settings/locked-content.ts`, `LockedSettings.tsx`, `ValuationOverview.tsx` — static content and components for the locked Settings pages (connections, ledgers, valuation); `valuation.server.ts` reads each company's valuation method.
 
 ### Decisions
 - Frontend and backend in one Worker and one repo (team choice, 21/11). Keep business rules in feature modules (`*.server.ts`) that do not import React Router, and keep routes thin, so an API can be split out later without rewriting logic.
@@ -86,11 +92,18 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - Posting dates: every transaction table (contracts, receipts, analyses, invoices, quotes, prices) has `system_date TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))` and `posting_date TEXT NOT NULL` (ISO `YYYY-MM-DD`, UTC). Validate input with `postingDateSchema({ testMode: await getTestMode(tenant) })` (defaults to today, past allowed, future refused outside test mode), use `PostingDateField` in forms, `PostingDates` for display, and `rowClassName({ backtrading: isBackdated(...) })` for list rows.
 - Provenance: every stored or calculated figure records provenance in the same batch as the write (`provenanceStatement`), and is shown with `ProvenanceValue`. Formulas are stored as readable text plus named inputs, never evaluated.
 - Releases: a release is cut by adding its entry (changes from Laimonade's done items) at the top of `src/versioning/releases.ts` and bumping `package.json` `version` to match, in the same merge to `main`; a test checks the two agree. The Worker never calls Laimonade.
+- Parameters live in `organisation_parameters` (text values, parsed by the registry's Zod schema; no row means the registry default). Read them with `getParameter` at the moment of use, never cache; changes are admin only and audited as `parameter.changed` with `{ key, oldValue, newValue }`. The three-way match flags a field only when its deviation is strictly more than the tolerance (exactly at it passes).
 - Logging: always through `createLogger()` in `src/utils/logger.ts`, never `console.*` directly (ESLint enforces it).
 - Quantities and values: convert with `src/units` (`convert`, exact decimals, no floats) and round only at the end of a calculation (`roundQuantity` 5 decimals, `roundValue` 2, half up). Never round intermediate steps.
 - Menu entries without a module open a placeholder page; locked entries have no path at all.
+- Reporting currency: `companies.reporting_currency` is the only copy, read and written by both Master Data > Companies and Settings > Currencies. NULL means "follows the base currency" and shows as "USD (default)"; choosing the base currency stores NULL (also through the company form). Always read it through `effectiveReportingCurrency()`. Only admins change it; base currency is never changed per entity.
+- Metals: `src/markets/` owns `metals` and the references of `metal_references`. A metal is in use (cannot be deleted) when `metalUsage(tenant, metalId)` returns reasons; later modules add their reasons there. Renaming a metal also updates `metal_references.metal`, which the menu shows.
+- Quality stages: a **locked** stage is a pre-set stage not available yet; it shows a lock and users cannot activate or deactivate it (only active <-> inactive for unlocked stages). Locked stages can still be renamed or reordered. Stages users add start active; codes are two uppercase letters, unique per organisation. Later modules read `activeQualityStages(tenant)`.
+
+- Books: only metals (not metalloids or non-metals) can be activated, checked on the server against `src/books/elements.ts`. Periods of one book metal never overlap (inclusive dates, `valid_to` NULL = open-ended); a period whose `valid_to` is before today (UTC) cannot change status. Activation creates the `metals` row if missing, a `book_metals` row (kg, the organisation's base currency) and an active period from today.
 
 ### Domain terms
+- **Publication calendar**: the ISO weekdays (1 = Monday ... 7 = Sunday) on which a metal reference publishes, minus its holidays; a reference with no calendar row publishes on no day.
 - **Organisation** (tenant): a customer company using Hedgile; seed organisation is **Hedgile** (`org_hedgile`), also the demo tenant.
 - **Membership / role**: a user in an organisation as `admin` (settings, members) or `user`.
 - **Metal reference**: a published price series for a metal (e.g. LME Nickel Cash); Market Data > Metals lists one entry per active reference.
@@ -101,6 +114,9 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - **Test mode**: an organisation setting (`organisations.test_mode`, admin only, audited) that allows future posting dates; shown as a badge in the top bar.
 - **Provenance**: the record of why a value is what it is: trigger, automatic or manual, who, when, and for calculated values the formula with its inputs (`value_provenance`, append-only; the newest row is current).
 - **Trigger**: what caused a value: `market`, `quantity`, `quality`, `pricing_conditions` or `manual`.
+- **Book metal**: a metal the organisation keeps books for, with a base UoM, a base currency and active/inactive periods; "active" means an active period covers today.
+- **Book metal / market-only metal**: a metal with a `book_metals` row (books are kept) vs one only followed in the market; shown in another colour in Settings > Markets.
+- **Source** (of a reference): how its prices arrive (Manual, Upload, Connection; `source_type`); `source` is the publisher (LME, MB).
 - **Draft** (Laimon): what Laimon read from a document, waiting for the user to confirm.
 
 ### Gotchas

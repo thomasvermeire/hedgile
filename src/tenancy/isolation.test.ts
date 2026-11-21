@@ -3,6 +3,13 @@
  * read and write, tried from a second organisation against Hedgile's records.
  */
 import { beforeEach, describe, expect, it } from 'vitest';
+import {
+  activateMetal,
+  addPeriod,
+  listBookMetals,
+  setBaseUnits,
+  updatePeriod,
+} from '../books/books.server';
 import { getAttachment, listAttachments } from '../master-data/attachments.server';
 import {
   createCompany,
@@ -17,10 +24,44 @@ import {
   listMaterials,
   updateMaterial,
 } from '../master-data/materials.server';
+import {
+  addReference,
+  createMetal,
+  deleteMetal,
+  getMetal,
+  getMetalReference,
+  listMetals,
+  metalInput,
+  metalUsage,
+  referenceInput,
+  renameMetal,
+  updateReference,
+} from '../markets/markets.server';
+import {
+  addHoliday,
+  getCalendar,
+  holidayInput,
+  listCalendars,
+  removeHoliday,
+  setWeekdays,
+  weekdaysInput,
+} from '../calendars/calendars.server';
 import { getReference, listActiveReferences } from '../master-data/references.server';
+import { getCurrencies, setReportingCurrency } from '../currencies/currencies.server';
+import { getParameter, parameterHistory, setParameter } from '../parameters/parameters.server';
 import { getTestMode, setTestMode } from '../posting/test-mode.server';
 import { changeRole, listMembers } from '../settings/members.server';
 import { getDraft, discardDraft } from '../laimon/drafts.server';
+import {
+  activeQualityStages,
+  addQualityStage,
+  getQualityStage,
+  listQualityStages,
+  newStageInput,
+  setQualityStageActive,
+  stageInput,
+  updateQualityStage,
+} from '../quality/stages.server';
 import { getProvenance, provenanceStatement } from '../provenance/provenance.server';
 import { createTestD1, runSqlFile } from '../test/d1';
 import { createTestR2 } from '../test/r2';
@@ -90,6 +131,7 @@ describe('organisation isolation', () => {
     expect((await listCompanies(hedgile)).map((c) => c.name)).toEqual(['Hedgile Limited']);
     expect(await listMaterials(hedgile)).toHaveLength(2);
     expect(await listActiveReferences(hedgile)).toHaveLength(2);
+    expect((await listBookMetals(hedgile)).map((m) => m.symbol)).toEqual(['Co', 'Ni']);
     expect(await getAttachment(hedgile, 'att_h')).not.toBeNull();
     expect(await getDraft(hedgile, 'drf_h')).not.toBeNull();
     expect((await getProvenance(hedgile, 'line', 'l1', 'amount'))?.latest.value).toBe('61500');
@@ -99,6 +141,7 @@ describe('organisation isolation', () => {
     expect(await listCompanies(other)).toEqual([]);
     expect(await listMaterials(other)).toEqual([]);
     expect(await listActiveReferences(other)).toEqual([]);
+    expect(await listBookMetals(other)).toEqual([]);
     expect(await listAttachments(other, 'company')).toEqual([]);
     expect((await listMembers(other)).map((m) => m.email)).toEqual(['r@x.test']);
   });
@@ -135,6 +178,20 @@ describe('organisation isolation', () => {
     expect(await getTestMode(hedgile)).toBe(true);
   });
 
+  it("another organisation cannot read or change Hedgile's parameters", async () => {
+    const key = 'three_way_match_tolerance_pct';
+    expect(await getParameter(hedgile, key)).toBe(5);
+    await setParameter(other, key, 9);
+    expect(await getParameter(other, key)).toBe(9);
+    expect(await getParameter(hedgile, key)).toBe(5);
+    expect(await parameterHistory(hedgile, key)).toEqual([]);
+    await setParameter(hedgile, key, 2);
+    await setParameter(other, key, 8);
+    expect(await getParameter(hedgile, key)).toBe(2);
+    expect((await parameterHistory(hedgile, key)).map((c) => c.newValue)).toEqual([2]);
+    expect((await parameterHistory(other, key)).map((c) => c.newValue)).toEqual([8, 9]);
+  });
+
   it("each organisation's new records stay its own", async () => {
     await createCompany(other, companyInput.parse({ name: 'Rival Metals', country: 'DE' }));
     await createMaterial(other, { code: 'NI-CATH', name: 'Their cathodes', metal: 'Nickel' });
@@ -142,5 +199,84 @@ describe('organisation isolation', () => {
     expect((await listMaterials(hedgile)).find((m) => m.code === 'NI-CATH')?.name).toBe(
       'Nickel cathodes'
     );
+  });
+
+  it("another organisation cannot change Hedgile's books", async () => {
+    const before = await listBookMetals(hedgile);
+    const ni = before.find((m) => m.symbol === 'Ni');
+    const draft = { status: 'inactive' as const, validFrom: '2018-12-01', validTo: null };
+    expect(await setBaseUnits(other, ni?.id ?? '', { baseUom: 'lb', baseCurrency: 'EUR' })).toBe(
+      false
+    );
+    expect(await addPeriod(other, ni?.id ?? '', { ...draft, validFrom: '2030-01-01' })).toBe(false);
+    expect(await updatePeriod(other, ni?.periods[0]?.id ?? '', draft)).toBe(false);
+    expect(await listBookMetals(hedgile)).toEqual(before);
+    // Activating in the other organisation creates its own rows and leaves Hedgile's alone.
+    await activateMetal(other, 'Ni');
+    expect((await listBookMetals(other)).map((m) => m.symbol)).toEqual(['Ni']);
+    expect(await listBookMetals(hedgile)).toEqual(before);
+  });
+
+  it("another organisation cannot read or change Hedgile's currencies", async () => {
+    expect((await getCurrencies(other)).entities).toEqual([]);
+    expect(
+      await setReportingCurrency(other, {
+        companyId: 'co_hedgile_limited',
+        reportingCurrency: 'EUR',
+      })
+    ).toBe(false);
+    expect((await getCompany(hedgile, 'co_hedgile_limited'))?.reportingCurrency).toBeNull();
+  });
+
+  it("another organisation cannot see or change Hedgile's metals and references", async () => {
+    expect(await listMetals(hedgile)).toHaveLength(2);
+    expect(await listMetals(other)).toEqual([]);
+    expect(await getMetal(other, 'mtl_ni')).toBeNull();
+    expect(await getMetalReference(other, 'ref_lme_ni_cash')).toBeNull();
+    expect(await metalUsage(other, 'mtl_ni')).toEqual([]);
+    expect(await renameMetal(other, 'mtl_ni', 'Taken')).toBe(false);
+    expect(await deleteMetal(other, 'mtl_ni')).toBe(false);
+    const ref = referenceInput.parse({ name: 'Mine', source: 'X', sourceType: 'manual' });
+    expect(await addReference(other, 'mtl_ni', ref)).toBeNull();
+    expect(await updateReference(other, 'ref_lme_ni_cash', ref)).toBe(false);
+    expect((await getMetal(hedgile, 'mtl_ni'))?.name).toBe('Nickel');
+    expect((await getMetalReference(hedgile, 'ref_lme_ni_cash'))?.name).toBe(
+      'LME Nickel Cash Settlement'
+    );
+    // The same symbol is free in another organisation.
+    await createMetal(other, metalInput.parse({ symbol: 'Ni', name: 'Nickel' }));
+    expect((await listMetals(hedgile)).map((m) => m.id)).toEqual(['mtl_co', 'mtl_ni']);
+  });
+
+  it("another organisation cannot read or change Hedgile's publication calendars", async () => {
+    expect(await getCalendar(other, 'ref_lme_ni_cash')).toBeNull();
+    expect(await listCalendars(other)).toEqual([]);
+    expect(
+      await setWeekdays(other, 'ref_lme_ni_cash', weekdaysInput.parse({ weekdays: [1] }))
+    ).toBe(false);
+    expect(
+      await addHoliday(other, 'ref_lme_ni_cash', holidayInput.parse({ date: '2019-06-03' }))
+    ).toBe(false);
+    expect(await removeHoliday(other, 'ref_lme_ni_cash', '2019-01-01')).toBe(false);
+    const lme = await getCalendar(hedgile, 'ref_lme_ni_cash');
+    expect(lme?.weekdays).toEqual([1, 2, 3, 4, 5]);
+    expect(lme?.holidays).toHaveLength(8);
+  });
+
+  it('quality stages: another organisation sees and changes none of them', async () => {
+    expect(await listQualityStages(hedgile)).toHaveLength(8);
+    expect(await listQualityStages(other)).toEqual([]);
+    expect(await activeQualityStages(other)).toEqual([]);
+    expect(await getQualityStage(other, 'qs_ta')).toBeNull();
+    expect(await setQualityStageActive(other, 'qs_ta', false)).toBe(false);
+    expect(await updateQualityStage(other, 'qs_ta', stageInput.parse({ name: 'Hacked' }))).toBe(
+      false
+    );
+    expect((await getQualityStage(hedgile, 'qs_ta'))?.status).toBe('active');
+    expect((await getQualityStage(hedgile, 'qs_ta'))?.name).toBe('Typical');
+    // The same code is free in another organisation, and stays its own.
+    await addQualityStage(other, newStageInput.parse({ code: 'TA', name: 'Their TA' }));
+    expect((await listQualityStages(other)).map((s) => s.name)).toEqual(['Their TA']);
+    expect(await listQualityStages(hedgile)).toHaveLength(8);
   });
 });

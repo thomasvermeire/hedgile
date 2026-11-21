@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { auditStatement } from '../db/audit.js';
 import { newId } from '../db/ids.js';
+import { isCurrencyCode } from '../currencies/currencies.js';
 import type { Tenant } from '../tenancy/tenant.js';
 import { stockValuationMethodOptions, type StockValuationMethod } from './companies.js';
 
@@ -79,10 +80,7 @@ export const companyInput = z.object({
     .toUpperCase()
     .optional()
     .transform((v) => (v ? v : null))
-    .refine(
-      (v) => v === null || /^[A-Z]{3}$/.test(v),
-      'Use a three-letter currency code, e.g. USD'
-    ),
+    .refine((v) => v === null || isCurrencyCode(v), 'Choose a currency from the list'),
   address: optionalText,
 });
 export type CompanyInput = z.infer<typeof companyInput>;
@@ -177,7 +175,8 @@ export async function updateCompany(
         vat_number = ?, registration_number = ?, address_line_1 = ?, address_line_2 = ?,
         city = ?, postal_code = ?, state_province = ?, website = ?,
         contact_person = ?, contact_email = ?, contact_phone = ?,
-        stock_valuation_method = ?, reporting_currency = ?, address = ?,
+        stock_valuation_method = ?, address = ?,
+        reporting_currency = CASE WHEN ? = base_currency THEN NULL ELSE ? END,
         updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
        WHERE organisation_id = ? AND id = ? RETURNING id`
     )
@@ -198,8 +197,9 @@ export async function updateCompany(
       input.contactEmail ?? null,
       input.contactPhone ?? null,
       input.stockValuationMethod ?? null,
-      input.reportingCurrency ?? null,
       input.address ?? null,
+      input.reportingCurrency ?? null,
+      input.reportingCurrency ?? null,
       tenant.organisationId,
       id
     )
