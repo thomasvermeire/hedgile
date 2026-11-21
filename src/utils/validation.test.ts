@@ -14,7 +14,7 @@ import {
 describe('Validation Utilities', () => {
   describe('ValidationError', () => {
     it('should create a validation error with issues', () => {
-      const issues = [
+      const issues: z.ZodIssue[] = [
         {
           code: 'invalid_type',
           expected: 'string',
@@ -22,7 +22,7 @@ describe('Validation Utilities', () => {
           path: ['name'],
           message: 'Expected string, received number',
         },
-      ] as const;
+      ];
 
       const error = new ValidationError('Test error', issues, 400);
 
@@ -34,7 +34,7 @@ describe('Validation Utilities', () => {
     });
 
     it('should convert to JSON', () => {
-      const issues = [
+      const issues: z.ZodIssue[] = [
         {
           code: 'invalid_type',
           expected: 'string',
@@ -42,7 +42,7 @@ describe('Validation Utilities', () => {
           path: ['name'],
           message: 'Expected string, received number',
         },
-      ] as const;
+      ];
 
       const error = new ValidationError('Test error', issues, 400);
       const json = error.toJSON();

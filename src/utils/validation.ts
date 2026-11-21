@@ -91,5 +91,8 @@ export const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 /**
  * Schema for validating ISO 8601 date-time strings.
+ * Accepts formats like: 2024-01-15T10:00:00Z or 2024-01-15T10:00:00+00:00
  */
-export const isoDateTimeSchema = z.string().datetime();
+export const isoDateTimeSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?(Z|[+-]\d{2}:\d{2})$/);

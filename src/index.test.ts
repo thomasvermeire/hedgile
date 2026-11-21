@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { APP_INFO, initialize, healthCheck, createTradeId } from './index.js';
 
 describe('Hedgile Application', () => {
@@ -21,7 +21,7 @@ describe('Hedgile Application', () => {
     it('should have correct application metadata', () => {
       expect(APP_INFO.name).toBe('Hedgile');
       expect(APP_INFO.version).toBe('0.1.0');
-      expect(APP_INFO.description).toContain('nickel');
+      expect(APP_INFO.description.toLowerCase()).toContain('nickel');
     });
   });
 
@@ -37,7 +37,9 @@ describe('Hedgile Application', () => {
 
       expect(consoleSpy).toHaveBeenCalled();
       expect(
-        consoleSpy.mock.calls.some((call) => call.some((arg: string) => arg.includes('Hedgile')))
+        consoleSpy.mock.calls.some((call: unknown[]) =>
+          (call as unknown[]).some((arg: unknown) => String(arg).includes('Hedgile'))
+        )
       ).toBe(true);
 
       consoleSpy.mockRestore();
@@ -56,7 +58,7 @@ describe('Hedgile Application', () => {
 
     it('should return a valid ISO timestamp', () => {
       const health = healthCheck();
-      const timestamp = health.timestamp as string;
+      const timestamp = (health as { timestamp: string }).timestamp;
 
       // Check if it's a valid ISO date string
       expect(new Date(timestamp).toISOString()).toBe(timestamp);

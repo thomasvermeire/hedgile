@@ -74,10 +74,14 @@ hedgile/
 │   │   └── validation.test.ts
 │   └── index.ts            # Main entry point
 ├── .env.example            # Example environment variables
-├── .eslintrc.cjs           # ESLint configuration
+├── .node-version           # Node.js version
+├── .nvmrc                  # Node.js version for nvm
 ├── .prettierrc             # Prettier configuration
+├── eslint.config.js        # ESLint configuration
 ├── package.json            # Project metadata and scripts
+├── pnpm-lock.yaml          # pnpm lockfile
 ├── tsconfig.json           # TypeScript configuration
+├── tsconfig.test.json      # Test TypeScript configuration
 └── vitest.config.ts        # Vitest configuration
 ```
 
