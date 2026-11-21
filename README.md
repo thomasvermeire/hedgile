@@ -14,6 +14,7 @@ It is one **Cloudflare Worker** (`hedgileapp`): a **React Router 7** app whose p
 - **Master data**: companies and materials, created and edited per organisation.
 - **Settings**: organisation name and base currency; invite members by email and change their role.
 - **Laimon panel**: on every page; chat, or drop a PDF to get a draft with a confidence per field, edit it, and save only after confirming. The PDF is attached to the record created, and the extraction is in the audit trail.
+- **Provenance**: every stored or calculated figure records its trigger (market, quantity, quality, pricing conditions, manual), automatic or manual, who and when, plus the formula with its actual inputs; click a figure (`ProvenanceValue`) to see "Why this value". Read it at `GET /api/provenance`.
 - **Deploy**: every push to `main` deploys to production (other branches are not deployed); `pnpm db:reset:remote` puts the demo organisation back to its start state.
 - **Health check**: `GET /health` reports whether the Worker and its database are up.
 

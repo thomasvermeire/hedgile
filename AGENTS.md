@@ -67,6 +67,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
   - `src/navigation/` — the menu (spec order, locked entries) and its icons.
   - `src/ui/` — shared UI kit: `Combobox`, `CardList`, `Lock`, `KnownBadge`, `rowClassName`, `Field`.
   - `src/master-data/`, `src/settings/` — the first screens' data access.
+  - `src/provenance/` — why a value is what it is: `provenanceStatement` (record in the write's batch), `getProvenance`, Zod entry, `renderCalculation`; API at `src/routes/api.provenance.ts`.
   - `src/laimon/` — the Laimon panel, Claude calls, extraction kinds, drafts.
   - `src/config/env.ts` — the Worker settings, validated with Zod.
   - `src/db/` — ids and the audit trail.
@@ -78,6 +79,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - Tenancy: every organisation-owned table has `organisation_id`, and every query on it goes through a function that takes a `Tenant` and filters on it. Never query those tables with an id alone. `src/tenancy/isolation.test.ts` checks each new read/write from a second organisation; extend it when you add one.
 - Sign-in is LaimonID only. A person joins an organisation by an invitation for their verified email, or by being listed in `BOOTSTRAP_ADMIN_EMAILS` (joins Hedgile as admin). Membership is re-checked on every request.
 - Laimon never writes figures itself: extraction produces a draft (value, confidence, evidence per field) the user edits and confirms; only then is the object created, with the PDF attached and the extraction and confirmation in `audit_log`.
+- Provenance: every stored or calculated figure records provenance in the same batch as the write (`provenanceStatement`), and is shown with `ProvenanceValue`. Formulas are stored as readable text plus named inputs, never evaluated.
 - Logging: always through `createLogger()` in `src/utils/logger.ts`, never `console.*` directly (ESLint enforces it).
 - Menu entries without a module open a placeholder page; locked entries have no path at all.
 
@@ -87,6 +89,8 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - **Metal reference**: a published price series for a metal (e.g. LME Nickel Cash); Market Data > Metals lists one entry per active reference.
 - **KNOWN / LAST KNOWN**: a price published for that date / the latest earlier price used because that date has none yet.
 - **Backtrading line**: a line entered with a date in the past; shown light red (`rowClassName({ backtrading: true })`).
+- **Provenance**: the record of why a value is what it is: trigger, automatic or manual, who, when, and for calculated values the formula with its inputs (`value_provenance`, append-only; the newest row is current).
+- **Trigger**: what caused a value: `market`, `quantity`, `quality`, `pricing_conditions` or `manual`.
 - **Draft** (Laimon): what Laimon read from a document, waiting for the user to confirm.
 
 ### Gotchas

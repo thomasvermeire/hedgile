@@ -19,6 +19,7 @@ import {
 import { getReference, listActiveReferences } from '../master-data/references.server';
 import { changeRole, listMembers } from '../settings/members.server';
 import { getDraft, discardDraft } from '../laimon/drafts.server';
+import { getProvenance, provenanceStatement } from '../provenance/provenance.server';
 import { createTestD1, runSqlFile } from '../test/d1';
 import { createTestR2 } from '../test/r2';
 import { seedOrgWithUser } from '../test/context';
@@ -67,6 +68,19 @@ describe('organisation isolation', () => {
       db.prepare(
         "INSERT INTO extraction_drafts (id, organisation_id, user_id, kind, status, r2_key, filename, content_type, size, fields) VALUES ('drf_h', 'org_hedgile', 'u_h', 'company', 'draft', 'k2', 'b.pdf', 'application/pdf', 1, '{}')"
       ),
+      provenanceStatement(hedgile, {
+        objectType: 'line',
+        objectId: 'l1',
+        field: 'amount',
+        value: 61500,
+        trigger: 'quantity',
+        mode: 'automatic',
+        formula: 'price × quantity',
+        inputs: [
+          { name: 'price', value: 12300 },
+          { name: 'quantity', value: 5 },
+        ],
+      }),
     ]);
   });
 
@@ -76,6 +90,7 @@ describe('organisation isolation', () => {
     expect(await listActiveReferences(hedgile)).toHaveLength(1);
     expect(await getAttachment(hedgile, 'att_h')).not.toBeNull();
     expect(await getDraft(hedgile, 'drf_h')).not.toBeNull();
+    expect((await getProvenance(hedgile, 'line', 'l1', 'amount'))?.latest.value).toBe('61500');
   });
 
   it('another organisation lists none of it', async () => {
@@ -92,6 +107,7 @@ describe('organisation isolation', () => {
     expect(await getReference(other, 'ref_lme_ni_cash')).toBeNull();
     expect(await getAttachment(other, 'att_h')).toBeNull();
     expect(await getDraft(other, 'drf_h')).toBeNull();
+    expect(await getProvenance(other, 'line', 'l1', 'amount')).toBeNull();
   });
 
   it('another organisation cannot change it', async () => {
