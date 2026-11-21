@@ -12,6 +12,7 @@ export default [
   // Signed in: API and files
   route('api/laimon/chat', 'routes/api.laimon.chat.ts'),
   route('api/laimon/extract', 'routes/api.laimon.extract.ts'),
+  route('api/provenance', 'routes/api.provenance.ts'),
   route('attachments/:attachmentId', 'routes/attachment.ts'),
 
   // Signed in: the app shell (menu + Laimon panel) around every page
