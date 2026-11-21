@@ -1,0 +1,148 @@
+# Laimonade CI. Laimonade added this file when it set up the project, and
+# automatic mode never merges a change to it on its own: CI decides whether a
+# change is safe to merge, so whoever writes the change does not write CI.
+#
+# It runs the project's own commands, so a new feature never needs it edited:
+#   Node    TypeScript in strict mode; lint, typecheck and test always, build when present
+#   Python  ruff and pytest always, mypy when installed
+# A project missing any of those fails here, on purpose.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect the project
+        id: detect
+        run: |
+          if [ -f package.json ]; then
+            echo "stack=node" >> "$GITHUB_OUTPUT"
+            if [ -f pnpm-lock.yaml ]; then pm=pnpm; elif [ -f package-lock.json ]; then pm=npm; else
+              echo "::error::No pnpm-lock.yaml at the repository root: this project uses pnpm, with its lockfile committed."
+              exit 1
+            fi
+            echo "pm=$pm" >> "$GITHUB_OUTPUT"
+            if [ -f .nvmrc ]; then echo "version_file=.nvmrc" >> "$GITHUB_OUTPUT";
+            elif [ -f .node-version ]; then echo "version_file=.node-version" >> "$GITHUB_OUTPUT"; fi
+          elif [ -f pyproject.toml ] || [ -f requirements.txt ]; then
+            echo "stack=python" >> "$GITHUB_OUTPUT"
+            if [ -f .python-version ]; then echo "version_file=.python-version" >> "$GITHUB_OUTPUT"; fi
+          else
+            echo "::error::No package.json, pyproject.toml or requirements.txt at the repository root: there is no project here for CI to check."
+            exit 1
+          fi
+
+      - name: Set up Node
+        if: steps.detect.outputs.stack == 'node'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.detect.outputs.version_file == '' && '22' || '' }}
+          node-version-file: ${{ steps.detect.outputs.version_file }}
+
+      - name: Install (Node)
+        if: steps.detect.outputs.stack == 'node'
+        env:
+          PM: ${{ steps.detect.outputs.pm }}
+        run: |
+          if [ "$PM" = npm ]; then
+            npm ci
+          else
+            # The pnpm version package.json names in packageManager, through corepack.
+            command -v corepack >/dev/null || npm install -g corepack
+            corepack enable
+            pnpm install --frozen-lockfile
+          fi
+
+      - name: TypeScript in strict mode (Node)
+        if: steps.detect.outputs.stack == 'node'
+        env:
+          PM: ${{ steps.detect.outputs.pm }}
+        run: |
+          if [ ! -f tsconfig.json ]; then
+            echo "::error::No tsconfig.json at the repository root: this project is set up as TypeScript in strict mode."
+            exit 1
+          fi
+          node <<'NODE'
+          const { execFileSync } = require('node:child_process');
+          const show = (p) => {
+            try {
+              const [cmd, ...pre] = process.env.PM === 'npm' ? ['npx', '--no-install'] : ['pnpm', 'exec'];
+              return JSON.parse(execFileSync(cmd, [...pre, 'tsc', '--showConfig', '-p', p], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }));
+            } catch (err) {
+              console.log('::error::TypeScript could not read ' + p + ': ' + String(err.stdout || err.stderr || err.message).trim());
+              process.exit(1);
+            }
+          };
+          const root = show('tsconfig.json');
+          // A solution-style root (Vite's react-ts template) compiles nothing
+          // itself: every project it references must be strict instead.
+          const refs = (root.references || []).map((r) => r.path);
+          const loose = (refs.length ? refs : ['tsconfig.json'])
+            .filter((p) => ((refs.length ? show(p) : root).compilerOptions || {}).strict !== true);
+          if (loose.length) {
+            console.log('::error::Not in strict mode (compilerOptions.strict): ' + loose.join(', '));
+            process.exit(1);
+          }
+          NODE
+
+      - name: Lint, type-check, test and build (Node)
+        if: steps.detect.outputs.stack == 'node'
+        env:
+          PM: ${{ steps.detect.outputs.pm }}
+        run: |
+          has() { node -e "process.exit(require('./package.json').scripts?.[process.argv[1]] ? 0 : 1)" "$1"; }
+          step() { echo "::group::$1"; "$PM" run "$1"; echo "::endgroup::"; }
+          need() { if ! has "$1"; then echo "::error::package.json has no $1 script."; exit 1; fi; }
+          need lint
+          step lint
+          if has type-check && ! has typecheck; then step type-check; else need typecheck; step typecheck; fi
+          step test
+          if has build; then step build; fi
+
+      - name: Set up Python
+        if: steps.detect.outputs.stack == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ steps.detect.outputs.version_file == '' && '3.12' || '' }}
+          python-version-file: ${{ steps.detect.outputs.version_file }}
+
+      - name: Install (Python)
+        if: steps.detect.outputs.stack == 'python'
+        run: |
+          python -m pip install --upgrade pip
+          for f in requirements.txt requirements-dev.txt; do
+            if [ -f "$f" ]; then pip install -r "$f"; fi
+          done
+          if [ -f pyproject.toml ] && grep -qE '^\[(project|build-system)\]' pyproject.toml; then
+            pip install -e ".[dev]"
+          fi
+
+      - name: Lint, type-check and test (Python)
+        if: steps.detect.outputs.stack == 'python'
+        run: |
+          if ! python -m ruff --version >/dev/null 2>&1; then
+            echo "::error::ruff is not installed: add it to requirements-dev.txt or the dev extra."
+            exit 1
+          fi
+          echo "::group::ruff"; python -m ruff check .; echo "::endgroup::"
+          if python -m mypy --version >/dev/null 2>&1; then echo "::group::mypy"; python -m mypy .; echo "::endgroup::"; fi
+          echo "::group::pytest"; python -m pytest; echo "::endgroup::"

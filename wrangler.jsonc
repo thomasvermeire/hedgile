@@ -1,0 +1,31 @@
+{
+  // One Worker serves everything: the React Router app (pages and server code)
+  // and its static assets. Cloudflare Workers Builds deploys it on every push.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hedgileapp",
+  "main": "workers/app.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "upload_source_maps": true,
+  "assets": { "not_found_handling": "none" },
+  "vars": {
+    "APP_ENV": "production",
+    "LOG_LEVEL": "info",
+    "LAIMONID_ISSUER": "",
+    "LAIMONID_CLIENT_ID": "",
+    "BOOTSTRAP_ADMIN_EMAILS": "",
+    "LAIMON_MODEL": "claude-opus-5-5",
+  },
+  // Secrets (set with `wrangler secret put` or in the dashboard, never here):
+  //   SESSION_SECRET, LAIMONID_CLIENT_SECRET, ANTHROPIC_API_KEY
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "hedgile-db",
+      "database_id": "b7fa785e-6140-46a9-a279-4ceca1dbcc82",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "r2_buckets": [{ "binding": "ATTACHMENTS", "bucket_name": "hedgile-attachments" }],
+}
