@@ -400,6 +400,26 @@ select:focus {
   font-size: 0.85rem;
 }
 
+.company-card {
+  font-size: 0.9rem;
+}
+
+.company-card p {
+  margin: 2px 0;
+}
+
+.lock-link,
+.pencil-link {
+  display: inline-flex;
+  color: var(--muted);
+  vertical-align: middle;
+}
+
+.lock-link:hover,
+.pencil-link:hover {
+  color: var(--brand);
+}
+
 /* Badges and rows */
 .badge {
   display: inline-block;
