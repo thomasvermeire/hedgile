@@ -67,6 +67,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
   - `src/navigation/` — the menu (spec order, locked entries) and its icons.
   - `src/ui/` — shared UI kit: `Combobox`, `CardList`, `Lock`, `KnownBadge`, `rowClassName`, `Field`.
   - `src/master-data/`, `src/settings/` — the first screens' data access.
+  - `src/books/` — Settings > Books: book metals and their periods (`books.server.ts`), pure period rules (`periods.ts`), the periodic table data (`elements.ts`) and picker, UoM/currency lists (`lists.ts`).
   - `src/posting/` — system date / posting date rules (`postingDateSchema`, `isBackdated`, `today`) and the organisation's test mode.
   - `src/provenance/` — why a value is what it is: `provenanceStatement` (record in the write's batch), `getProvenance`, Zod entry, `renderCalculation`; API at `src/routes/api.provenance.ts`.
   - `src/laimon/` — the Laimon panel, Claude calls, extraction kinds, drafts.
@@ -88,6 +89,8 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - Logging: always through `createLogger()` in `src/utils/logger.ts`, never `console.*` directly (ESLint enforces it).
 - Menu entries without a module open a placeholder page; locked entries have no path at all.
 
+- Books: only metals (not metalloids or non-metals) can be activated, checked on the server against `src/books/elements.ts`. Periods of one book metal never overlap (inclusive dates, `valid_to` NULL = open-ended); a period whose `valid_to` is before today (UTC) cannot change status. Activation creates the `metals` row if missing, a `book_metals` row (kg, the organisation's base currency) and an active period from today.
+
 ### Domain terms
 - **Organisation** (tenant): a customer company using Hedgile; seed organisation is **Hedgile** (`org_hedgile`), also the demo tenant.
 - **Membership / role**: a user in an organisation as `admin` (settings, members) or `user`.
@@ -99,6 +102,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - **Test mode**: an organisation setting (`organisations.test_mode`, admin only, audited) that allows future posting dates; shown as a badge in the top bar.
 - **Provenance**: the record of why a value is what it is: trigger, automatic or manual, who, when, and for calculated values the formula with its inputs (`value_provenance`, append-only; the newest row is current).
 - **Trigger**: what caused a value: `market`, `quantity`, `quality`, `pricing_conditions` or `manual`.
+- **Book metal**: a metal the organisation keeps books for, with a base UoM, a base currency and active/inactive periods; "active" means an active period covers today.
 - **Draft** (Laimon): what Laimon read from a document, waiting for the user to confirm.
 
 ### Gotchas
