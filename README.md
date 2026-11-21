@@ -13,6 +13,7 @@ It is one **Cloudflare Worker** (`hedgileapp`): a **React Router 7** app whose p
 - **Shared UI kit**: type-ahead dropdowns that match any part of the value, card lists with plus (create) and pencil (edit), locks, light red backtrading rows, KNOWN / LAST KNOWN badges.
 - **Master data**: companies and materials, created and edited per organisation.
 - **Settings**: organisation name and base currency; invite members by email and change their role.
+- **Posting dates**: every transaction keeps a system date and a posting date; the posting date defaults to today, backdated postings are flagged, and future dates are refused unless an admin turns on test mode in Settings (shown as a badge in the top bar).
 - **Laimon panel**: on every page; chat, or drop a PDF to get a draft with a confidence per field, edit it, and save only after confirming. The PDF is attached to the record created, and the extraction is in the audit trail.
 - **Deploy**: every push to `main` deploys to production (other branches are not deployed); `pnpm db:reset:remote` puts the demo organisation back to its start state.
 - **Health check**: `GET /health` reports whether the Worker and its database are up.
@@ -93,6 +94,7 @@ src/navigation/         Menu and icons
 src/ui/                 Shared UI kit
 src/master-data/        Companies, materials, metal references, attachments
 src/settings/           Organisation settings and members
+src/posting/            System and posting dates, test mode
 src/laimon/             Laimon panel, Claude calls, drafts
 src/config/env.ts       Settings validation
 src/utils/              Logger, validation, form helpers

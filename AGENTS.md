@@ -67,6 +67,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
   - `src/navigation/` — the menu (spec order, locked entries) and its icons.
   - `src/ui/` — shared UI kit: `Combobox`, `CardList`, `Lock`, `KnownBadge`, `rowClassName`, `Field`.
   - `src/master-data/`, `src/settings/` — the first screens' data access.
+  - `src/posting/` — system date / posting date rules (`postingDateSchema`, `isBackdated`, `today`) and the organisation's test mode.
   - `src/laimon/` — the Laimon panel, Claude calls, extraction kinds, drafts.
   - `src/config/env.ts` — the Worker settings, validated with Zod.
   - `src/db/` — ids and the audit trail.
@@ -78,6 +79,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - Tenancy: every organisation-owned table has `organisation_id`, and every query on it goes through a function that takes a `Tenant` and filters on it. Never query those tables with an id alone. `src/tenancy/isolation.test.ts` checks each new read/write from a second organisation; extend it when you add one.
 - Sign-in is LaimonID only. A person joins an organisation by an invitation for their verified email, or by being listed in `BOOTSTRAP_ADMIN_EMAILS` (joins Hedgile as admin). Membership is re-checked on every request.
 - Laimon never writes figures itself: extraction produces a draft (value, confidence, evidence per field) the user edits and confirms; only then is the object created, with the PDF attached and the extraction and confirmation in `audit_log`.
+- Posting dates: every transaction table (contracts, receipts, analyses, invoices, quotes, prices) has `system_date TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))` and `posting_date TEXT NOT NULL` (ISO `YYYY-MM-DD`, UTC). Validate input with `postingDateSchema({ testMode: await getTestMode(tenant) })` (defaults to today, past allowed, future refused outside test mode), use `PostingDateField` in forms, `PostingDates` for display, and `rowClassName({ backtrading: isBackdated(...) })` for list rows.
 - Logging: always through `createLogger()` in `src/utils/logger.ts`, never `console.*` directly (ESLint enforces it).
 - Menu entries without a module open a placeholder page; locked entries have no path at all.
 
@@ -87,6 +89,9 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - **Metal reference**: a published price series for a metal (e.g. LME Nickel Cash); Market Data > Metals lists one entry per active reference.
 - **KNOWN / LAST KNOWN**: a price published for that date / the latest earlier price used because that date has none yet.
 - **Backtrading line**: a line entered with a date in the past; shown light red (`rowClassName({ backtrading: true })`).
+- **System date**: when a transaction row was written (`system_date`); set by the database, never edited.
+- **Posting date**: the date a transaction counts for (`posting_date`); defaults to today, earlier dates are backdated, later dates need test mode.
+- **Test mode**: an organisation setting (`organisations.test_mode`, admin only, audited) that allows future posting dates; shown as a badge in the top bar.
 - **Draft** (Laimon): what Laimon read from a document, waiting for the user to confirm.
 
 ### Gotchas

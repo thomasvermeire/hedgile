@@ -10,6 +10,7 @@ import {
   organisationInput,
   updateOrganisation,
 } from '../settings/members.server.js';
+import { getTestMode, setTestMode } from '../posting/test-mode.server.js';
 import { ForbiddenError } from '../tenancy/tenant.js';
 import { CardList } from '../ui/CardList';
 import { Combobox } from '../ui/Combobox';
@@ -41,6 +42,7 @@ export async function loader(args: Route.LoaderArgs) {
   if (editId && !editing) throw data('Not found', { status: 404 });
   return {
     organisation: await getOrganisation(tenant),
+    testMode: await getTestMode(tenant),
     members,
     isAdmin: tenant.role === 'admin',
     editing,
@@ -57,6 +59,8 @@ export async function action(args: Route.ActionArgs) {
       const parsed = parseForm(organisationInput, form);
       if (!parsed.ok) return data({ errors: parsed.errors }, { status: 400 });
       await updateOrganisation(tenant, parsed.data);
+    } else if (intent === 'test-mode') {
+      await setTestMode(tenant, form.get('testMode') === 'on');
     } else if (intent === 'invite') {
       const parsed = parseForm(memberInput, form);
       if (!parsed.ok) return data({ errors: parsed.errors }, { status: 400 });
@@ -81,7 +85,7 @@ export async function action(args: Route.ActionArgs) {
 }
 
 export default function Settings({ loaderData, actionData }: Route.ComponentProps) {
-  const { organisation, members, isAdmin, editing, inviting } = loaderData;
+  const { organisation, testMode, members, isAdmin, editing, inviting } = loaderData;
   const errors: Partial<Record<string, string>> = actionData?.errors ?? {};
   const busy = useNavigation().state === 'submitting';
 
@@ -112,6 +116,25 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
               <div className="form-actions">
                 <button type="submit" className="button button--primary">
                   Save
+                </button>
+              </div>
+            )}
+          </fieldset>
+        </Form>
+        <Form method="post">
+          <input type="hidden" name="intent" value="test-mode" />
+          <fieldset disabled={!isAdmin || busy}>
+            <label className="switch">
+              <input type="checkbox" name="testMode" defaultChecked={testMode} role="switch" />
+              Test mode
+            </label>
+            <p className="muted">
+              In test mode, posting dates may be in the future. Leave it off for real bookkeeping.
+            </p>
+            {isAdmin && (
+              <div className="form-actions">
+                <button type="submit" className="button">
+                  Save test mode
                 </button>
               </div>
             )}
