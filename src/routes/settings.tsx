@@ -1,13 +1,16 @@
 import { data, Form, Link, redirect, useNavigation } from 'react-router';
 import { requireTenant } from '../auth/guard.server.js';
 import {
+  addMember,
   changeRole,
   getOrganisation,
-  inviteMember,
   LastAdminError,
   listMembers,
   memberInput,
+  MemberExistsError,
   organisationInput,
+  passwordResetInput,
+  resetMemberPassword,
   updateOrganisation,
 } from '../settings/members.server.js';
 import { ForbiddenError } from '../tenancy/tenant.js';
@@ -60,7 +63,7 @@ export async function action(args: Route.ActionArgs) {
     } else if (intent === 'invite') {
       const parsed = parseForm(memberInput, form);
       if (!parsed.ok) return data({ errors: parsed.errors }, { status: 400 });
-      await inviteMember(tenant, parsed.data);
+      await addMember(tenant, parsed.data);
     } else if (intent === 'role') {
       const role = form.get('role');
       const id = form.get('id');
@@ -68,6 +71,16 @@ export async function action(args: Route.ActionArgs) {
         return data({ errors: { role: 'Choose a role' } }, { status: 400 });
       }
       if (!(await changeRole(tenant, id, role))) throw data('Not found', { status: 404 });
+    } else if (intent === 'password') {
+      const parsed = parseForm(passwordResetInput, form);
+      const id = form.get('id');
+      if (!parsed.ok) return data({ errors: parsed.errors }, { status: 400 });
+      if (
+        typeof id !== 'string' ||
+        !(await resetMemberPassword(tenant, id, parsed.data.password))
+      ) {
+        throw data('Not found', { status: 404 });
+      }
     } else {
       throw data('Unknown action', { status: 400 });
     }
@@ -75,6 +88,8 @@ export async function action(args: Route.ActionArgs) {
     if (error instanceof ForbiddenError) throw data(error.message, { status: 403 });
     if (error instanceof LastAdminError)
       return data({ errors: { role: error.message } }, { status: 400 });
+    if (error instanceof MemberExistsError)
+      return data({ errors: { email: error.message } }, { status: 400 });
     throw error;
   }
   return redirect('/settings');
@@ -123,26 +138,35 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
         <CardList
           title="Members"
           createTo={isAdmin ? '?invite' : undefined}
-          createLabel="Invite member"
+          createLabel="Add member"
           items={members.map((m) => ({
             id: m.id,
             title: m.name ?? m.email,
-            subtitle: `${m.email} · ${m.role}${m.pending ? ' · invited' : ''}`,
+            subtitle: `${m.email} · ${m.role}${m.pending ? ' · never signed in' : ''}`,
             editTo: isAdmin ? `?member=${m.id}` : undefined,
           }))}
         />
         {isAdmin && inviting && (
           <Form method="post" className="panel-form">
-            <h2>Invite a member</h2>
+            <h2>Add a member</h2>
             <p className="muted">
-              They join when they first sign in with LaimonID using this email address.
+              Give them their email and this initial password; they can change it under My account.
+              Someone who already has a Hedgile account keeps their own password.
             </p>
             <input type="hidden" name="intent" value="invite" />
             <Field label="Email" name="email" type="email" error={errors.email} required />
+            <Field label="Name" name="name" error={errors.name} />
+            <Field
+              label="Initial password"
+              name="password"
+              type="password"
+              error={errors.password}
+              required
+            />
             <Combobox label="Role" name="role" options={roleOptions} defaultValue="user" required />
             <div className="form-actions">
               <button type="submit" className="button button--primary" disabled={busy}>
-                Invite
+                Add
               </button>
               <Link to="/settings" className="button">
                 Cancel
@@ -151,27 +175,47 @@ export default function Settings({ loaderData, actionData }: Route.ComponentProp
           </Form>
         )}
         {isAdmin && editing && (
-          <Form method="post" className="panel-form" key={editing.id}>
-            <h2>{editing.name ?? editing.email}</h2>
-            <input type="hidden" name="intent" value="role" />
-            <input type="hidden" name="id" value={editing.id} />
-            <Combobox
-              label="Role"
-              name="role"
-              options={roleOptions}
-              defaultValue={editing.role}
-              required
-            />
-            {errors.role && <p className="field__error">{errors.role}</p>}
-            <div className="form-actions">
-              <button type="submit" className="button button--primary" disabled={busy}>
-                Save
-              </button>
-              <Link to="/settings" className="button">
-                Cancel
-              </Link>
-            </div>
-          </Form>
+          <div key={editing.id}>
+            <Form method="post" className="panel-form">
+              <h2>{editing.name ?? editing.email}</h2>
+              <input type="hidden" name="intent" value="role" />
+              <input type="hidden" name="id" value={editing.id} />
+              <Combobox
+                label="Role"
+                name="role"
+                options={roleOptions}
+                defaultValue={editing.role}
+                required
+              />
+              {errors.role && <p className="field__error">{errors.role}</p>}
+              <div className="form-actions">
+                <button type="submit" className="button button--primary" disabled={busy}>
+                  Save
+                </button>
+                <Link to="/settings" className="button">
+                  Cancel
+                </Link>
+              </div>
+            </Form>
+            <Form method="post" className="panel-form">
+              <h2>Set a new password</h2>
+              <p className="muted">For someone who forgot theirs. Signs them out everywhere.</p>
+              <input type="hidden" name="intent" value="password" />
+              <input type="hidden" name="id" value={editing.id} />
+              <Field
+                label="New password"
+                name="password"
+                type="password"
+                error={errors.password}
+                required
+              />
+              <div className="form-actions">
+                <button type="submit" className="button" disabled={busy}>
+                  Set password
+                </button>
+              </div>
+            </Form>
+          </div>
         )}
       </div>
     </>

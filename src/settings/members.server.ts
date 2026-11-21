@@ -1,20 +1,48 @@
 import { z } from 'zod';
 import { auditStatement } from '../db/audit.js';
 import { newId } from '../db/ids.js';
-import { requireAdmin, type Role, type Tenant } from '../tenancy/tenant.js';
+import { MIN_PASSWORD_LENGTH } from '../auth/password.js';
+import { LOCAL_ISSUER, normaliseEmail, setPassword } from '../tenancy/membership.server.js';
+import { ForbiddenError, requireAdmin, type Role, type Tenant } from '../tenancy/tenant.js';
 
 export interface Member {
   id: string;
   email: string;
   name: string | null;
   role: Role;
+  /** Has never signed in (e.g. added with an initial password). */
   pending: boolean;
 }
 
+const password = z
+  .string()
+  .min(MIN_PASSWORD_LENGTH, `Use at least ${MIN_PASSWORD_LENGTH} characters`)
+  .max(200, 'Use at most 200 characters');
+
 export const memberInput = z.object({
   email: z.string().trim().toLowerCase().email('Enter a valid email address'),
+  name: z
+    .string()
+    .trim()
+    .max(200)
+    .optional()
+    .transform((v) => (v ? v : null)),
   role: z.enum(['admin', 'user']),
+  password,
 });
+
+export const passwordResetInput = z.object({ password });
+
+export const passwordChangeInput = z
+  .object({
+    current: z.string().min(1, 'Enter your current password'),
+    password,
+    confirm: z.string(),
+  })
+  .refine((v) => v.password === v.confirm, {
+    path: ['confirm'],
+    message: 'The passwords do not match',
+  });
 
 export const organisationInput = z.object({
   name: z.string().trim().min(1, 'Enter a name').max(200),
@@ -35,7 +63,7 @@ export class LastAdminError extends Error {
 export async function listMembers(tenant: Tenant): Promise<Member[]> {
   const { results } = await tenant.db
     .prepare(
-      `SELECT m.id, m.email, u.name, m.role, (m.user_id IS NULL) AS pending
+      `SELECT m.id, m.email, u.name, m.role, (u.last_sign_in_at IS NULL) AS pending
        FROM memberships m LEFT JOIN users u ON u.id = m.user_id
        WHERE m.organisation_id = ? ORDER BY m.email`
     )
@@ -75,29 +103,80 @@ export async function updateOrganisation(
   ]);
 }
 
-/** Invite by email; the person joins on their first LaimonID sign-in with that address. */
-export async function inviteMember(
-  tenant: Tenant,
-  input: z.infer<typeof memberInput>
-): Promise<void> {
+export class MemberExistsError extends Error {
+  constructor() {
+    super('This email is already a member');
+    this.name = 'MemberExistsError';
+  }
+}
+
+/**
+ * Add a member with an initial password they can change under "My account".
+ * Someone who already has an account (e.g. in another organisation) keeps their
+ * own password: an admin of one organisation can never set it.
+ */
+export async function addMember(tenant: Tenant, input: z.infer<typeof memberInput>): Promise<void> {
   requireAdmin(tenant);
-  const id = newId('mem');
+  const email = normaliseEmail(input.email);
+  const taken = await tenant.db
+    .prepare('SELECT 1 FROM memberships WHERE organisation_id = ? AND email = ?')
+    .bind(tenant.organisationId, email)
+    .first();
+  if (taken) throw new MemberExistsError();
+  const existing = await tenant.db
+    .prepare('SELECT id FROM users WHERE issuer = ? AND email = ?')
+    .bind(LOCAL_ISSUER, email)
+    .first<{ id: string }>();
+  const userId = existing?.id ?? (await setPassword(tenant.db, email, input.password, input.name));
   await tenant.db.batch([
     tenant.db
       .prepare(
-        `INSERT INTO memberships (id, organisation_id, user_id, email, role)
-         VALUES (?, ?, (SELECT id FROM users WHERE email = ? LIMIT 1), ?, ?)
-         ON CONFLICT (organisation_id, email) DO UPDATE SET role = excluded.role`
+        'INSERT INTO memberships (id, organisation_id, user_id, email, role) VALUES (?, ?, ?, ?, ?)'
       )
-      .bind(id, tenant.organisationId, input.email, input.email, input.role),
+      .bind(newId('mem'), tenant.organisationId, userId, email, input.role),
     auditStatement(tenant.db, {
       organisationId: tenant.organisationId,
       userId: tenant.userId,
-      action: 'membership.invited',
+      action: 'membership.added',
       objectType: 'membership',
-      details: input,
+      details: { email, role: input.role, existingAccount: Boolean(existing) },
     }),
   ]);
+}
+
+/**
+ * An admin sets a new password for a member, e.g. one who forgot theirs. Only
+ * for accounts that belong to this organisation alone; signs out their sessions.
+ */
+export async function resetMemberPassword(
+  tenant: Tenant,
+  membershipId: string,
+  newPassword: string
+): Promise<boolean> {
+  requireAdmin(tenant);
+  const member = await tenant.db
+    .prepare(
+      `SELECT m.user_id AS userId, m.email,
+              (SELECT COUNT(*) FROM memberships o WHERE o.user_id = m.user_id AND o.organisation_id != m.organisation_id) AS elsewhere
+       FROM memberships m WHERE m.organisation_id = ? AND m.id = ?`
+    )
+    .bind(tenant.organisationId, membershipId)
+    .first<{ userId: string | null; email: string; elsewhere: number }>();
+  if (!member?.userId) return false;
+  if (member.elsewhere > 0) {
+    throw new ForbiddenError(
+      'This person is also in another organisation: they change their password themselves'
+    );
+  }
+  await setPassword(tenant.db, member.email, newPassword);
+  await auditStatement(tenant.db, {
+    organisationId: tenant.organisationId,
+    userId: tenant.userId,
+    action: 'membership.password_reset',
+    objectType: 'membership',
+    objectId: membershipId,
+  }).run();
+  return true;
 }
 
 export async function changeRole(

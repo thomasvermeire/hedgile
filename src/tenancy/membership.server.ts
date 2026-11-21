@@ -1,16 +1,19 @@
 import { auditStatement } from '../db/audit.js';
 import { newId } from '../db/ids.js';
+import {
+  burnPasswordCheck,
+  constantTimeStringEqual,
+  hashPassword,
+  verifyPassword,
+} from '../auth/password.js';
 import type { Role } from './tenant.js';
 
 export const HEDGILE_ORG_ID = 'org_hedgile';
+export const LOCAL_ISSUER = 'local';
 
-export interface Identity {
-  issuer: string;
-  subject: string;
-  email: string;
-  emailVerified: boolean;
-  name: string | null;
-}
+/** Wrong passwords in a row before the account locks, and for how long. */
+export const MAX_FAILED_LOGINS = 5;
+export const LOCK_MINUTES = 15;
 
 export interface Membership {
   organisationId: string;
@@ -18,74 +21,159 @@ export interface Membership {
   role: Role;
 }
 
+export interface Bootstrap {
+  /** The first admin: signing in with exactly these creates them as admin of Hedgile. */
+  email: string | undefined;
+  password: string | undefined;
+}
+
 export type SignInResult =
-  | { ok: true; userId: string; membership: Membership }
-  | { ok: false; reason: 'no_membership' | 'email_not_verified' };
+  | { ok: true; userId: string; sessionVersion: number; membership: Membership }
+  | { ok: false; reason: 'invalid' | 'locked' | 'no_membership' };
+
+interface UserRow {
+  id: string;
+  passwordHash: string | null;
+  failedLogins: number;
+  lockedUntil: string | null;
+  sessionVersion: number;
+}
+
+export function normaliseEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
 
 /**
- * Turn a verified LaimonID identity into a Hedgile user in an organisation.
- * Order: an existing membership; else an invitation for the verified email;
- * else a bootstrap admin email joins organisation Hedgile as admin; else refused.
+ * Check an email and password. Wrong passwords count towards a temporary lock;
+ * the reply never says whether the email exists. The configured bootstrap
+ * admin is created on their first sign-in.
  */
-export async function resolveSignIn(
+export async function signIn(
   db: D1Database,
-  identity: Identity,
-  bootstrapAdminEmails: string[]
+  rawEmail: string,
+  password: string,
+  bootstrap: Bootstrap,
+  now: Date = new Date()
 ): Promise<SignInResult> {
-  const email = identity.email.trim().toLowerCase();
-  const existing = await db
-    .prepare('SELECT id FROM users WHERE issuer = ? AND subject = ?')
-    .bind(identity.issuer, identity.subject)
-    .first<{ id: string }>();
-  const userId = existing?.id ?? newId('usr');
+  const email = normaliseEmail(rawEmail);
+  const user = await db
+    .prepare(
+      `SELECT id, password_hash AS passwordHash, failed_logins AS failedLogins, locked_until AS lockedUntil,
+              session_version AS sessionVersion
+       FROM users WHERE issuer = ? AND email = ?`
+    )
+    .bind(LOCAL_ISSUER, email)
+    .first<UserRow>();
 
+  if (!user) {
+    if (
+      bootstrap.email &&
+      bootstrap.password &&
+      constantTimeStringEqual(email, normaliseEmail(bootstrap.email)) &&
+      constantTimeStringEqual(password, bootstrap.password)
+    ) {
+      return createBootstrapAdmin(db, email, password);
+    }
+    await burnPasswordCheck(password);
+    return { ok: false, reason: 'invalid' };
+  }
+
+  if (user.lockedUntil && new Date(user.lockedUntil) > now) {
+    await burnPasswordCheck(password);
+    return { ok: false, reason: 'locked' };
+  }
+
+  const valid = user.passwordHash ? await verifyPassword(password, user.passwordHash) : false;
+  if (!valid) {
+    const failed = user.failedLogins + 1;
+    const lock =
+      failed >= MAX_FAILED_LOGINS
+        ? new Date(now.getTime() + LOCK_MINUTES * 60_000).toISOString()
+        : null;
+    await db
+      .prepare('UPDATE users SET failed_logins = ?, locked_until = ? WHERE id = ?')
+      .bind(lock ? 0 : failed, lock, user.id)
+      .run();
+    return { ok: false, reason: lock ? 'locked' : 'invalid' };
+  }
+
+  await db
+    .prepare(
+      `UPDATE users SET failed_logins = 0, locked_until = NULL, last_sign_in_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`
+    )
+    .bind(user.id)
+    .run();
+  const membership = await findMembership(db, user.id);
+  if (!membership) return { ok: false, reason: 'no_membership' };
+  return { ok: true, userId: user.id, sessionVersion: user.sessionVersion, membership };
+}
+
+async function createBootstrapAdmin(
+  db: D1Database,
+  email: string,
+  password: string
+): Promise<SignInResult> {
+  const userId = newId('usr');
+  await db.batch([
+    db
+      .prepare(
+        `INSERT INTO users (id, issuer, subject, email, password_hash, last_sign_in_at)
+         VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`
+      )
+      .bind(userId, LOCAL_ISSUER, userId, email, await hashPassword(password)),
+    db
+      .prepare(
+        `INSERT INTO memberships (id, organisation_id, user_id, email, role) VALUES (?, ?, ?, ?, 'admin')
+         ON CONFLICT (organisation_id, email) DO UPDATE SET user_id = excluded.user_id, role = 'admin'`
+      )
+      .bind(newId('mem'), HEDGILE_ORG_ID, userId, email),
+    auditStatement(db, {
+      organisationId: HEDGILE_ORG_ID,
+      userId,
+      action: 'membership.bootstrap_admin',
+      objectType: 'user',
+      objectId: userId,
+    }),
+  ]);
+  const membership = await findMembership(db, userId);
+  if (!membership) return { ok: false, reason: 'no_membership' };
+  return { ok: true, userId, sessionVersion: 0, membership };
+}
+
+/**
+ * Create a password account, or set a new password on an existing one.
+ * Returns the user id. Bumping session_version signs out the account's sessions.
+ */
+export async function setPassword(
+  db: D1Database,
+  rawEmail: string,
+  password: string,
+  name?: string | null
+): Promise<string> {
+  const email = normaliseEmail(rawEmail);
+  const hash = await hashPassword(password);
+  const existing = await db
+    .prepare('SELECT id FROM users WHERE issuer = ? AND email = ?')
+    .bind(LOCAL_ISSUER, email)
+    .first<{ id: string }>();
   if (existing) {
     await db
       .prepare(
-        `UPDATE users SET email = ?, name = ?, last_sign_in_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`
+        `UPDATE users SET password_hash = ?, failed_logins = 0, locked_until = NULL,
+           session_version = session_version + 1, name = COALESCE(?, name) WHERE id = ?`
       )
-      .bind(email, identity.name, userId)
+      .bind(hash, name ?? null, existing.id)
       .run();
-  } else {
-    await db
-      .prepare(
-        `INSERT INTO users (id, issuer, subject, email, name, last_sign_in_at)
-         VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`
-      )
-      .bind(userId, identity.issuer, identity.subject, email, identity.name)
-      .run();
+    return existing.id;
   }
-
-  let membership = await findMembership(db, userId);
-  if (membership) return { ok: true, userId, membership };
-
-  // Claiming by email needs a verified address, or anyone could take an invitation.
-  if (!identity.emailVerified) return { ok: false, reason: 'email_not_verified' };
-
-  const claimed = await db
-    .prepare('UPDATE memberships SET user_id = ? WHERE user_id IS NULL AND email = ?')
-    .bind(userId, email)
+  const userId = newId('usr');
+  await db
+    .prepare(
+      'INSERT INTO users (id, issuer, subject, email, name, password_hash) VALUES (?, ?, ?, ?, ?, ?)'
+    )
+    .bind(userId, LOCAL_ISSUER, userId, email, name ?? null, hash)
     .run();
-  if (claimed.meta.changes === 0 && bootstrapAdminEmails.includes(email)) {
-    await db.batch([
-      db
-        .prepare(
-          `INSERT INTO memberships (id, organisation_id, user_id, email, role) VALUES (?, ?, ?, ?, 'admin')
-           ON CONFLICT (organisation_id, email) DO UPDATE SET user_id = excluded.user_id`
-        )
-        .bind(newId('mem'), HEDGILE_ORG_ID, userId, email),
-      auditStatement(db, {
-        organisationId: HEDGILE_ORG_ID,
-        userId,
-        action: 'membership.bootstrap_admin',
-        objectType: 'user',
-        objectId: userId,
-      }),
-    ]);
-  }
-
-  membership = await findMembership(db, userId);
-  return membership ? { ok: true, userId, membership } : { ok: false, reason: 'no_membership' };
+  return userId;
 }
 
 /** The user's membership: in organisation Hedgile when they have one there, else their oldest. */

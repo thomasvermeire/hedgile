@@ -8,7 +8,7 @@ export default function SignedOut() {
   return (
     <AuthCard title="You are signed out">
       <a className="button button--primary" href="/auth/login">
-        Sign in with LaimonID
+        Sign in again
       </a>
     </AuthCard>
   );
