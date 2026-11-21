@@ -87,6 +87,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - Releases: a release is cut by adding its entry (changes from Laimonade's done items) at the top of `src/versioning/releases.ts` and bumping `package.json` `version` to match, in the same merge to `main`; a test checks the two agree. The Worker never calls Laimonade.
 - Logging: always through `createLogger()` in `src/utils/logger.ts`, never `console.*` directly (ESLint enforces it).
 - Menu entries without a module open a placeholder page; locked entries have no path at all.
+- Metals: `src/markets/` owns `metals` and the references of `metal_references`. A metal is in use (cannot be deleted) when `metalUsage(tenant, metalId)` returns reasons; later modules add their reasons there. Renaming a metal also updates `metal_references.metal`, which the menu shows.
 
 ### Domain terms
 - **Organisation** (tenant): a customer company using Hedgile; seed organisation is **Hedgile** (`org_hedgile`), also the demo tenant.
@@ -99,6 +100,8 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - **Test mode**: an organisation setting (`organisations.test_mode`, admin only, audited) that allows future posting dates; shown as a badge in the top bar.
 - **Provenance**: the record of why a value is what it is: trigger, automatic or manual, who, when, and for calculated values the formula with its inputs (`value_provenance`, append-only; the newest row is current).
 - **Trigger**: what caused a value: `market`, `quantity`, `quality`, `pricing_conditions` or `manual`.
+- **Book metal / market-only metal**: a metal with a `book_metals` row (books are kept) vs one only followed in the market; shown in another colour in Settings > Markets.
+- **Source** (of a reference): how its prices arrive (Manual, Upload, Connection; `source_type`); `source` is the publisher (LME, MB).
 - **Draft** (Laimon): what Laimon read from a document, waiting for the user to confirm.
 
 ### Gotchas

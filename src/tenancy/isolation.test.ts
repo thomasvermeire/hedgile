@@ -17,6 +17,19 @@ import {
   listMaterials,
   updateMaterial,
 } from '../master-data/materials.server';
+import {
+  addReference,
+  createMetal,
+  deleteMetal,
+  getMetal,
+  getMetalReference,
+  listMetals,
+  metalInput,
+  metalUsage,
+  referenceInput,
+  renameMetal,
+  updateReference,
+} from '../markets/markets.server';
 import { getReference, listActiveReferences } from '../master-data/references.server';
 import { getTestMode, setTestMode } from '../posting/test-mode.server';
 import { changeRole, listMembers } from '../settings/members.server';
@@ -142,5 +155,25 @@ describe('organisation isolation', () => {
     expect((await listMaterials(hedgile)).find((m) => m.code === 'NI-CATH')?.name).toBe(
       'Nickel cathodes'
     );
+  });
+
+  it("another organisation cannot see or change Hedgile's metals and references", async () => {
+    expect(await listMetals(hedgile)).toHaveLength(2);
+    expect(await listMetals(other)).toEqual([]);
+    expect(await getMetal(other, 'mtl_ni')).toBeNull();
+    expect(await getMetalReference(other, 'ref_lme_ni_cash')).toBeNull();
+    expect(await metalUsage(other, 'mtl_ni')).toEqual([]);
+    expect(await renameMetal(other, 'mtl_ni', 'Taken')).toBe(false);
+    expect(await deleteMetal(other, 'mtl_ni')).toBe(false);
+    const ref = referenceInput.parse({ name: 'Mine', source: 'X', sourceType: 'manual' });
+    expect(await addReference(other, 'mtl_ni', ref)).toBeNull();
+    expect(await updateReference(other, 'ref_lme_ni_cash', ref)).toBe(false);
+    expect((await getMetal(hedgile, 'mtl_ni'))?.name).toBe('Nickel');
+    expect((await getMetalReference(hedgile, 'ref_lme_ni_cash'))?.name).toBe(
+      'LME Nickel Cash Settlement'
+    );
+    // The same symbol is free in another organisation.
+    await createMetal(other, metalInput.parse({ symbol: 'Ni', name: 'Nickel' }));
+    expect((await listMetals(hedgile)).map((m) => m.id)).toEqual(['mtl_co', 'mtl_ni']);
   });
 });
