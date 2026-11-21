@@ -13,7 +13,7 @@ async function refusal(promise: Promise<unknown>): Promise<Response> {
 }
 
 describe('requireTenant', () => {
-  it('sends an unauthenticated page request to LaimonID sign-in', async () => {
+  it('sends an unauthenticated page request to the sign-in page', async () => {
     const env = createTestEnv();
     const res = await refusal(
       requireTenant({
@@ -88,6 +88,31 @@ describe('requireTenant', () => {
     );
     expect(res.status).toBe(302);
     expect(res.headers.get('Set-Cookie')).toContain('hedgile_session=;');
+  });
+
+  it('signs out sessions that began before a password change', async () => {
+    const env = createTestEnv();
+    await seedOrgWithUser(env.DB, {
+      orgId: 'org_hedgile',
+      orgName: 'Hedgile',
+      userId: 'u1',
+      email: 'ann@x.test',
+    });
+    const cookie = await sessionCookie(env, 'u1', 'org_hedgile', 0);
+    await env.DB.prepare("UPDATE users SET session_version = 1 WHERE id = 'u1'").run();
+    const res = await refusal(
+      requireTenant({
+        request: new Request('https://app.test/', { headers: { Cookie: cookie } }),
+        context: contextFor(env),
+      })
+    );
+    expect(res.status).toBe(302);
+    const fresh = await sessionCookie(env, 'u1', 'org_hedgile', 1);
+    const tenant = await requireTenant({
+      request: new Request('https://app.test/', { headers: { Cookie: fresh } }),
+      context: contextFor(env),
+    });
+    expect(tenant.userId).toBe('u1');
   });
 
   it('turns missing settings into a 503 naming them', async () => {

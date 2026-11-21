@@ -12,13 +12,11 @@
   "vars": {
     "APP_ENV": "production",
     "LOG_LEVEL": "info",
-    "LAIMONID_ISSUER": "",
-    "LAIMONID_CLIENT_ID": "",
-    "BOOTSTRAP_ADMIN_EMAILS": "",
     "LAIMON_MODEL": "claude-opus-5-5",
   },
   // Secrets (set with `wrangler secret put` or in the dashboard, never here):
-  //   SESSION_SECRET, LAIMONID_CLIENT_SECRET, ANTHROPIC_API_KEY
+  //   SESSION_SECRET, BOOTSTRAP_ADMIN_EMAIL, BOOTSTRAP_ADMIN_PASSWORD, ANTHROPIC_API_KEY
+  // (dashboard secrets survive deploys; plain vars set in the dashboard do not)
   "d1_databases": [
     {
       "binding": "DB",

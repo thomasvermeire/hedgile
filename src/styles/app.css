@@ -633,3 +633,22 @@ select:focus {
     width: 100%;
   }
 }
+
+/* Account and sign-in form */
+a.topbar__user {
+  color: var(--text);
+  text-decoration: none;
+}
+a.topbar__user:hover {
+  text-decoration: underline;
+}
+.narrow {
+  max-width: 420px;
+}
+.auth__form {
+  text-align: left;
+}
+.auth__form .button {
+  width: 100%;
+  margin-top: 4px;
+}

@@ -3,7 +3,7 @@ import { ConfigError, getConfig, type AppConfig } from '../config/env.js';
 import { createLogger } from '../utils/logger.js';
 import { findMembership } from '../tenancy/membership.server.js';
 import type { Tenant } from '../tenancy/tenant.js';
-import { authCookies } from './session.server.js';
+import { sessionStorage } from './session.server.js';
 
 export interface RequestArgs {
   request: Request;
@@ -47,19 +47,21 @@ function refuse(request: Request, headers?: HeadersInit): never {
 export async function requireTenant({ request, context }: RequestArgs): Promise<Tenant> {
   const env = appEnv(context);
   const config = appConfig(context);
-  const { sessions } = authCookies(config);
+  const sessions = sessionStorage(config);
   const session = await sessions.getSession(request.headers.get('Cookie'));
   const userId = session.get('userId');
   const organisationId = session.get('organisationId');
+  const sessionVersion = session.get('sessionVersion') ?? 0;
   if (!userId || !organisationId) refuse(request);
 
   const [membership, user] = await Promise.all([
     findMembership(env.DB, userId, organisationId),
-    env.DB.prepare('SELECT email, name FROM users WHERE id = ?')
+    env.DB.prepare('SELECT email, name, session_version AS sessionVersion FROM users WHERE id = ?')
       .bind(userId)
-      .first<{ email: string; name: string | null }>(),
+      .first<{ email: string; name: string | null; sessionVersion: number }>(),
   ]);
-  if (!membership || !user) {
+  // Signed out when the membership is gone or the password changed since this session began.
+  if (!membership || !user || user.sessionVersion !== sessionVersion) {
     refuse(request, { 'Set-Cookie': await sessions.destroySession(session) });
   }
 

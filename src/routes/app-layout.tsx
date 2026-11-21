@@ -1,5 +1,5 @@
 import { LogOut } from 'lucide-react';
-import { Form, Outlet } from 'react-router';
+import { Form, Link, Outlet } from 'react-router';
 import { appConfig, requireTenant } from '../auth/guard.server.js';
 import { LaimonPanel } from '../laimon/LaimonPanel';
 import { listActiveReferences } from '../master-data/references.server.js';
@@ -34,10 +34,10 @@ export default function AppLayout({ loaderData }: Route.ComponentProps) {
       <div className="shell__main">
         <header className="topbar">
           <span className="topbar__org">{organisation}</span>
-          <span className="topbar__user">
+          <Link to="/account" className="topbar__user" title="My account">
             {user.name ?? user.email}
             <span className="muted"> · {user.role}</span>
-          </span>
+          </Link>
           <Form method="post" action="/auth/logout">
             <button type="submit" className="icon-button" aria-label="Sign out" title="Sign out">
               <LogOut aria-hidden="true" size={16} />

@@ -3,12 +3,14 @@
 declare namespace Cloudflare {
   interface Env {
     SESSION_SECRET: string;
-    LAIMONID_CLIENT_SECRET: string;
+    BOOTSTRAP_ADMIN_EMAIL?: string;
+    BOOTSTRAP_ADMIN_PASSWORD?: string;
     ANTHROPIC_API_KEY?: string;
   }
 }
 interface Env {
   SESSION_SECRET: string;
-  LAIMONID_CLIENT_SECRET: string;
+  BOOTSTRAP_ADMIN_EMAIL?: string;
+  BOOTSTRAP_ADMIN_PASSWORD?: string;
   ANTHROPIC_API_KEY?: string;
 }

@@ -53,7 +53,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 ### Stack
 - One Cloudflare Worker (`hedgileapp`) serves everything: React Router 7 in framework mode (React 19 pages plus server loaders/actions) and the static assets. Built with Vite 8 and `@cloudflare/vite-plugin`.
 - Data: Cloudflare D1 (SQLite) bound as `DB`; files: R2 bound as `ATTACHMENTS`. Both in `wrangler.jsonc`.
-- Sign-in: LaimonID over OpenID Connect (authorization code + PKCE, ID token checked with `jose`); signed cookie sessions.
+- Sign-in: email and password (PBKDF2-SHA256 via Web Crypto, `src/auth/password.ts`); signed cookie sessions. LaimonID is planned for later.
 - Laimon: Claude API (`@anthropic-ai/sdk`, model in `LAIMON_MODEL`, server-side refusal fallback on).
 - TypeScript strict, Zod 4 for every input, Vitest 5 (+ Testing Library/jsdom for components), ESLint 9 + typescript-eslint, Prettier, pnpm 9, Node 22.
 
@@ -62,21 +62,21 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - `src/routes.ts` — every URL. `src/routes/*` — one file per route (thin: check input, call a feature module, return).
 - `src/root.tsx`, `src/entry.server.tsx` — HTML shell, error page, streaming render.
 - Feature folders, each with its tests next to it:
-  - `src/auth/` — LaimonID OIDC client, session cookies, `requireTenant` (the guard every signed-in route calls first).
-  - `src/tenancy/` — organisations, memberships, roles, sign-in resolution.
+  - `src/auth/` — password hashing, session cookies, own password change, `requireTenant` (the guard every signed-in route calls first).
+  - `src/tenancy/` — organisations, memberships, roles, sign-in (`signIn`, lockout, bootstrap admin).
   - `src/navigation/` — the menu (spec order, locked entries) and its icons.
   - `src/ui/` — shared UI kit: `Combobox`, `CardList`, `Lock`, `KnownBadge`, `rowClassName`, `Field`.
   - `src/master-data/`, `src/settings/` — the first screens' data access.
   - `src/laimon/` — the Laimon panel, Claude calls, extraction kinds, drafts.
   - `src/config/env.ts` — the Worker settings, validated with Zod.
   - `src/db/` — ids and the audit trail.
-  - `src/test/` — test doubles: D1 on Node's SQLite with the real migrations, in-memory R2, a fake LaimonID, the end-to-end main-flow test.
+  - `src/test/` — test doubles: D1 on Node's SQLite with the real migrations, in-memory R2, the end-to-end main-flow test.
 - `migrations/` — D1 schema, applied in order (`pnpm db:migrate:*`). `db/reset-demo.sql` — the demo start state.
 
 ### Decisions
 - Frontend and backend in one Worker and one repo (team choice, 21/11). Keep business rules in feature modules (`*.server.ts`) that do not import React Router, and keep routes thin, so an API can be split out later without rewriting logic.
 - Tenancy: every organisation-owned table has `organisation_id`, and every query on it goes through a function that takes a `Tenant` and filters on it. Never query those tables with an id alone. `src/tenancy/isolation.test.ts` checks each new read/write from a second organisation; extend it when you add one.
-- Sign-in is LaimonID only. A person joins an organisation by an invitation for their verified email, or by being listed in `BOOTSTRAP_ADMIN_EMAILS` (joins Hedgile as admin). Membership is re-checked on every request.
+- Sign-in is email and password for now (team choice, 21/11: LaimonID later). The first admin comes from the `BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD` secrets; admins add members with an initial password. An admin can never set the password of an account that is also in another organisation. 5 wrong passwords lock an account for 15 minutes; replies never say whether an email exists. A password change bumps `users.session_version`, which signs out older sessions. Membership is re-checked on every request.
 - Laimon never writes figures itself: extraction produces a draft (value, confidence, evidence per field) the user edits and confirms; only then is the object created, with the PDF attached and the extraction and confirmation in `audit_log`.
 - Logging: always through `createLogger()` in `src/utils/logger.ts`, never `console.*` directly (ESLint enforces it).
 - Menu entries without a module open a placeholder page; locked entries have no path at all.
@@ -93,6 +93,8 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - After changing `wrangler.jsonc`, run `pnpm cf-typegen` and commit `worker-configuration.d.ts`. Secrets are typed in `src/env.d.ts`.
 - Route types come from `react-router typegen` (`pnpm typecheck` runs it); import them from `./+types/<route>`.
 - Workers are not Node: no `fs`, no `process.env` at runtime. Settings come from `context.cloudflare.env`.
+- Settings the team changes in the dashboard must be secrets: `wrangler deploy` overwrites plain vars with `wrangler.jsonc`.
+- PBKDF2 in Workers is capped at 100 000 iterations; do not raise `ITERATIONS` in `src/auth/password.ts`.
 - D1 `batch()` is atomic; use it when several writes must succeed together (e.g. a record plus its audit entry).
 - Only `main` is deployed (team choice, 21/11: no branch previews). Check a branch locally with `pnpm dev`.
 - Prettier skips AGENTS.md (see `.prettierignore`): Laimonade replaces the standards section exactly as written.

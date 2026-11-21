@@ -1,15 +1,11 @@
 import { z } from 'zod';
+import { MIN_PASSWORD_LENGTH } from '../auth/password.js';
 import { LOG_LEVELS } from '../utils/logger.js';
 
-const emailList = z
+const optionalText = z
   .string()
-  .default('')
-  .transform((value) =>
-    value
-      .split(',')
-      .map((email) => email.trim().toLowerCase())
-      .filter(Boolean)
-  );
+  .optional()
+  .transform((value) => (value?.trim() ? value.trim() : undefined));
 
 /**
  * The Worker's settings: vars from wrangler.jsonc plus secrets. Checked on the
@@ -18,11 +14,19 @@ const emailList = z
 export const envSchema = z.object({
   APP_ENV: z.enum(['development', 'test', 'production']).default('production'),
   LOG_LEVEL: z.enum(LOG_LEVELS).default('info'),
-  LAIMONID_ISSUER: z.url({ protocol: /^https?$/ }),
-  LAIMONID_CLIENT_ID: z.string().min(1),
-  LAIMONID_CLIENT_SECRET: z.string().min(1),
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters'),
-  BOOTSTRAP_ADMIN_EMAILS: emailList,
+  // The first admin: signing in with exactly this email and password creates them
+  // as admin of Hedgile. Remove both once that account exists.
+  BOOTSTRAP_ADMIN_EMAIL: optionalText.pipe(z.email().optional()),
+  BOOTSTRAP_ADMIN_PASSWORD: optionalText.pipe(
+    z
+      .string()
+      .min(
+        MIN_PASSWORD_LENGTH,
+        `BOOTSTRAP_ADMIN_PASSWORD must be at least ${MIN_PASSWORD_LENGTH} characters`
+      )
+      .optional()
+  ),
   ANTHROPIC_API_KEY: z
     .string()
     .optional()
