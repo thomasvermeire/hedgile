@@ -17,6 +17,7 @@ import {
   updateMaterial,
 } from '../master-data/materials.server';
 import { getReference, listActiveReferences } from '../master-data/references.server';
+import { getTestMode, setTestMode } from '../posting/test-mode.server';
 import { changeRole, listMembers } from '../settings/members.server';
 import { getDraft, discardDraft } from '../laimon/drafts.server';
 import { createTestD1, runSqlFile } from '../test/d1';
@@ -111,6 +112,15 @@ describe('organisation isolation', () => {
     expect((await getCompany(hedgile, 'co_demo_trading'))?.name).toBe('Hedgile Demo Trading BV');
     expect((await getMaterial(hedgile, 'mat_ni_cathode'))?.name).toBe('Nickel cathodes');
     expect((await getDraft(hedgile, 'drf_h'))?.status).toBe('draft');
+  });
+
+  it("another organisation cannot read or change Hedgile's test mode", async () => {
+    await setTestMode(other, true);
+    expect(await getTestMode(other)).toBe(true);
+    expect(await getTestMode(hedgile)).toBe(false);
+    await setTestMode(hedgile, true);
+    await setTestMode(other, false);
+    expect(await getTestMode(hedgile)).toBe(true);
   });
 
   it("each organisation's new records stay its own", async () => {
