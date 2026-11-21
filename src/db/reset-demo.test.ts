@@ -52,7 +52,20 @@ describe('db/reset-demo.sql', () => {
       results: [{ name: 'Hedgile Limited' }],
     });
     expect(await count(db, 'materials')).toBe(2);
-    expect(await count(db, 'metal_references')).toBe(1);
+    expect(await count(db, 'metal_references')).toBe(2);
+    expect(await count(db, 'metals')).toBe(2);
+    expect(await count(db, 'book_metals')).toBe(2);
+    expect(await count(db, 'book_metal_periods')).toBe(2);
+    expect(await count(db, 'publication_calendars')).toBe(2);
+    expect(await count(db, 'publication_holidays')).toBe(8);
+    expect(await count(db, 'quality_stages')).toBe(8);
+    expect(
+      await db
+        .prepare(
+          "SELECT value FROM organisation_parameters WHERE organisation_id = 'org_hedgile' AND key = 'three_way_match_tolerance_pct'"
+        )
+        .first('value')
+    ).toBe('5');
     expect(await count(db, 'extraction_drafts')).toBe(0);
     expect(await count(db, 'value_provenance')).toBe(0);
     expect(await count(db, 'memberships')).toBe(1);

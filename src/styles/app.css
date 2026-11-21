@@ -848,3 +848,47 @@ a.topbar__user:hover {
   font-size: 0.75rem;
   font-weight: 600;
 }
+
+/* Settings: sub-menu beside each settings page */
+.settings {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.settings__nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: sticky;
+  top: 16px;
+}
+.settings__link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: var(--text);
+  text-decoration: none;
+}
+.settings__link:hover {
+  background: var(--surface);
+}
+.settings__link.is-active {
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+  font-weight: 600;
+}
+@media (max-width: 900px) {
+  .settings {
+    grid-template-columns: 1fr;
+  }
+  .settings__nav ul {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}

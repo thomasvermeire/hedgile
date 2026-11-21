@@ -42,14 +42,14 @@ describe('Laimon drafts', () => {
     db = createTestD1();
     bucket = createTestR2();
     await seedOrgWithUser(db, {
-      orgId: 'org_hedgile',
+      orgId: 'org_drafts_test',
       orgName: 'Hedgile',
       userId: 'u1',
       email: 'a@x.test',
     });
     tenant = {
       db,
-      organisationId: 'org_hedgile',
+      organisationId: 'org_drafts_test',
       organisationName: 'Hedgile',
       userId: 'u1',
       email: 'a@x.test',

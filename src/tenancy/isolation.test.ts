@@ -89,7 +89,7 @@ describe('organisation isolation', () => {
   it('Hedgile sees its own data', async () => {
     expect((await listCompanies(hedgile)).map((c) => c.name)).toEqual(['Hedgile Limited']);
     expect(await listMaterials(hedgile)).toHaveLength(2);
-    expect(await listActiveReferences(hedgile)).toHaveLength(1);
+    expect(await listActiveReferences(hedgile)).toHaveLength(2);
     expect(await getAttachment(hedgile, 'att_h')).not.toBeNull();
     expect(await getDraft(hedgile, 'drf_h')).not.toBeNull();
     expect((await getProvenance(hedgile, 'line', 'l1', 'amount'))?.latest.value).toBe('61500');
