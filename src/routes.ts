@@ -18,7 +18,19 @@ export default [
   // Signed in: the app shell (menu + Laimon panel) around every page
   layout('routes/app-layout.tsx', [
     index('routes/home.tsx'),
-    route('settings', 'routes/settings.tsx'),
+    route('settings', 'routes/settings-layout.tsx', [
+      index('routes/settings.tsx'),
+      route('books', 'routes/settings.books.tsx'),
+      route('markets', 'routes/settings.markets.tsx'),
+      route('calendars', 'routes/settings.calendars.tsx'),
+      route('currencies', 'routes/settings.currencies.tsx'),
+      route('units', 'routes/settings.units.tsx'),
+      route('quality-stages', 'routes/settings.quality-stages.tsx'),
+      route('parameters', 'routes/settings.parameters.tsx'),
+      route('connections', 'routes/settings.connections.tsx'),
+      route('ledgers', 'routes/settings.ledgers.tsx'),
+      route('valuation', 'routes/settings.valuation.tsx'),
+    ]),
     route('account', 'routes/account.tsx'),
     route('master-data/companies', 'routes/master-data.companies.tsx'),
     route('master-data/materials', 'routes/master-data.materials.tsx'),

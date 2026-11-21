@@ -9,6 +9,7 @@ import {
   getCompany,
   listCompanies,
   updateCompany,
+  companyInput,
 } from '../master-data/companies.server';
 import {
   createMaterial,
@@ -64,7 +65,7 @@ describe('organisation isolation', () => {
     other = tenant(db, 'org_rival', 'u_r');
     await db.batch([
       db.prepare(
-        "INSERT INTO attachments (id, organisation_id, object_type, object_id, r2_key, filename, content_type, size) VALUES ('att_h', 'org_hedgile', 'company', 'co_demo_trading', 'k', 'a.pdf', 'application/pdf', 1)"
+        "INSERT INTO attachments (id, organisation_id, object_type, object_id, r2_key, filename, content_type, size) VALUES ('att_h', 'org_hedgile', 'company', 'co_hedgile_limited', 'k', 'a.pdf', 'application/pdf', 1)"
       ),
       db.prepare(
         "INSERT INTO extraction_drafts (id, organisation_id, user_id, kind, status, r2_key, filename, content_type, size, fields) VALUES ('drf_h', 'org_hedgile', 'u_h', 'company', 'draft', 'k2', 'b.pdf', 'application/pdf', 1, '{}')"
@@ -86,9 +87,9 @@ describe('organisation isolation', () => {
   });
 
   it('Hedgile sees its own data', async () => {
-    expect((await listCompanies(hedgile)).map((c) => c.name)).toEqual(['Hedgile Demo Trading BV']);
+    expect((await listCompanies(hedgile)).map((c) => c.name)).toEqual(['Hedgile Limited']);
     expect(await listMaterials(hedgile)).toHaveLength(2);
-    expect(await listActiveReferences(hedgile)).toHaveLength(1);
+    expect(await listActiveReferences(hedgile)).toHaveLength(2);
     expect(await getAttachment(hedgile, 'att_h')).not.toBeNull();
     expect(await getDraft(hedgile, 'drf_h')).not.toBeNull();
     expect((await getProvenance(hedgile, 'line', 'l1', 'amount'))?.latest.value).toBe('61500');
@@ -103,7 +104,7 @@ describe('organisation isolation', () => {
   });
 
   it('another organisation cannot open it by id', async () => {
-    expect(await getCompany(other, 'co_demo_trading')).toBeNull();
+    expect(await getCompany(other, 'co_hedgile_limited')).toBeNull();
     expect(await getMaterial(other, 'mat_ni_cathode')).toBeNull();
     expect(await getReference(other, 'ref_lme_ni_cash')).toBeNull();
     expect(await getAttachment(other, 'att_h')).toBeNull();
@@ -113,19 +114,14 @@ describe('organisation isolation', () => {
 
   it('another organisation cannot change it', async () => {
     expect(
-      await updateCompany(other, 'co_demo_trading', {
-        name: 'Taken',
-        country: null,
-        vatNumber: null,
-        address: null,
-      })
+      await updateCompany(other, 'co_hedgile_limited', companyInput.parse({ name: 'Taken' }))
     ).toBe(false);
     expect(
       await updateMaterial(other, 'mat_ni_cathode', { code: 'X', name: 'Taken', metal: 'Zinc' })
     ).toBe(false);
     expect(await changeRole(other, 'mem_u_h', 'user')).toBe(false);
     expect(await discardDraft(other, createTestR2(), 'drf_h')).toBe(false);
-    expect((await getCompany(hedgile, 'co_demo_trading'))?.name).toBe('Hedgile Demo Trading BV');
+    expect((await getCompany(hedgile, 'co_hedgile_limited'))?.name).toBe('Hedgile Limited');
     expect((await getMaterial(hedgile, 'mat_ni_cathode'))?.name).toBe('Nickel cathodes');
     expect((await getDraft(hedgile, 'drf_h'))?.status).toBe('draft');
   });
@@ -140,14 +136,9 @@ describe('organisation isolation', () => {
   });
 
   it("each organisation's new records stay its own", async () => {
-    await createCompany(other, {
-      name: 'Rival Metals',
-      country: 'DE',
-      vatNumber: null,
-      address: null,
-    });
+    await createCompany(other, companyInput.parse({ name: 'Rival Metals', country: 'DE' }));
     await createMaterial(other, { code: 'NI-CATH', name: 'Their cathodes', metal: 'Nickel' });
-    expect((await listCompanies(hedgile)).map((c) => c.name)).toEqual(['Hedgile Demo Trading BV']);
+    expect((await listCompanies(hedgile)).map((c) => c.name)).toEqual(['Hedgile Limited']);
     expect((await listMaterials(hedgile)).find((m) => m.code === 'NI-CATH')?.name).toBe(
       'Nickel cathodes'
     );
