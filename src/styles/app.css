@@ -892,3 +892,63 @@ a.topbar__user:hover {
     gap: 4px;
   }
 }
+
+/* Locked settings */
+.locked-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.locked-banner p {
+  margin: 0;
+}
+.locked-card {
+  margin-bottom: 20px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.locked-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.locked-card__header h2 {
+  margin: 0;
+}
+.locked-card__spacer {
+  flex: 1;
+}
+.locked-connection {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.locked-connection__direction {
+  margin: 2px 0;
+  font-weight: 600;
+}
+.locked-connection__actions {
+  display: flex;
+  gap: 4px;
+  align-items: flex-start;
+}
+.locked-card .icon-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.badge--inactive {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.75rem;
+}
