@@ -34,7 +34,7 @@ const expectedStructure = {
 
 // Expected locked items
 const expectedLockedItems = [
-    'Currencies',
+    'Market Data:Currencies',
     'Purchasing:Quotes',
     'Purchasing:Invoices',
     'Sales:Quotes',
@@ -69,22 +69,18 @@ const lockedLinks = Array.from(document.querySelectorAll('.nav-link.locked')).ma
     const text = link.textContent.trim();
     const section = link.closest('.nav-section')?.querySelector('.section-header')?.textContent.trim();
     const subsection = link.closest('.nav-subsection')?.querySelector('.subsection-header')?.textContent.trim();
-    
+
     if (subsection) {
-        return `${section}:${subsection}:${text}`;
+        // For items in subsections, use subsection:text format
+        return `${subsection}:${text}`;
     } else if (section) {
+        // For items directly in sections, use section:text format
         return `${section}:${text}`;
     }
     return text;
 });
 
-const expectedLocked = expectedLockedItems.map(item => {
-    const [section, subsection, text] = item.split(':');
-    if (subsection) {
-        return `${section}:${subsection}:${text}`;
-    }
-    return `${section}:${text}`;
-});
+const expectedLocked = expectedLockedItems;
 
 // Sort both arrays for comparison
 const sortedLocked = lockedLinks.sort();
@@ -127,32 +123,45 @@ for (const [section, content] of Object.entries(expectedStructure)) {
     const sectionElement = Array.from(document.querySelectorAll('.section-header')).find(
         el => el.textContent.trim() === section
     )?.parentElement;
-    
+
     if (!sectionElement) {
         console.log(`  ❌ Section "${section}" not found`);
         structureMatch = false;
         allTestsPassed = false;
         continue;
     }
-    
-    if (typeof content === 'object') {
+
+    if (Array.isArray(content)) {
+        // This is a section with direct items
+        const menuItems = Array.from(sectionElement.querySelectorAll('.nav-link')).map(
+            el => el.textContent.trim()
+        );
+
+        if (JSON.stringify(menuItems) !== JSON.stringify(content)) {
+            console.log(`  ❌ Menu items mismatch in section "${section}"`);
+            console.log(`     Expected: ${JSON.stringify(content)}`);
+            console.log(`     Found: ${JSON.stringify(menuItems)}`);
+            structureMatch = false;
+            allTestsPassed = false;
+        }
+    } else if (typeof content === 'object' && content !== null) {
         // This is a section with subsections
         for (const [subsection, items] of Object.entries(content)) {
             const subsectionElement = Array.from(sectionElement.querySelectorAll('.subsection-header')).find(
                 el => el.textContent.trim() === subsection
             )?.parentElement;
-            
+
             if (!subsectionElement) {
                 console.log(`  ❌ Subsection "${subsection}" not found in section "${section}"`);
                 structureMatch = false;
                 allTestsPassed = false;
                 continue;
             }
-            
+
             const menuItems = Array.from(subsectionElement.querySelectorAll('.nav-link')).map(
                 el => el.textContent.trim()
             );
-            
+
             if (JSON.stringify(menuItems) !== JSON.stringify(items)) {
                 console.log(`  ❌ Menu items mismatch in ${section}:${subsection}`);
                 console.log(`     Expected: ${JSON.stringify(items)}`);
@@ -160,19 +169,6 @@ for (const [section, content] of Object.entries(expectedStructure)) {
                 structureMatch = false;
                 allTestsPassed = false;
             }
-        }
-    } else {
-        // This is a section with direct items
-        const menuItems = Array.from(sectionElement.querySelectorAll('.nav-link')).map(
-            el => el.textContent.trim()
-        );
-        
-        if (JSON.stringify(menuItems) !== JSON.stringify(content)) {
-            console.log(`  ❌ Menu items mismatch in section "${section}"`);
-            console.log(`     Expected: ${JSON.stringify(content)}`);
-            console.log(`     Found: ${JSON.stringify(menuItems)}`);
-            structureMatch = false;
-            allTestsPassed = false;
         }
     }
 }
