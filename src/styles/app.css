@@ -892,3 +892,25 @@ a.topbar__user:hover {
     gap: 4px;
   }
 }
+
+/* Parameters */
+.parameter__value {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.parameter__unit {
+  padding-bottom: 8px;
+  color: var(--muted);
+}
+.parameter__history {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.parameter__history th,
+.parameter__history td {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border, #d8dee4);
+}
