@@ -105,7 +105,10 @@ describe('main user flow', () => {
     expect(await appLayout.loader(args(env, get(jar, '/master-data/materials')))).toMatchObject({
       organisation: 'Hedgile',
       user: { email: BOOTSTRAP_EMAIL, role: 'admin' },
-      references: [{ id: 'ref_lme_ni_cash', name: 'LME Nickel Cash' }],
+      references: [
+        { id: 'ref_mb_co_mbll', name: 'Metal Bulletin Low Grade Low (MBLL)' },
+        { id: 'ref_lme_ni_cash', name: 'LME Nickel Cash Settlement' },
+      ],
     });
 
     // Add a material, then see it in the list; an invalid metal is refused.

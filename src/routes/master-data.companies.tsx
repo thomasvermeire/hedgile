@@ -8,10 +8,19 @@ import {
   listCompanies,
   updateCompany,
 } from '../master-data/companies.server.js';
+import { stockValuationMethodOptions } from '../master-data/companies';
+import { CompanyDetails } from '../master-data/CompanyDetails';
 import { CardList } from '../ui/CardList';
+import { Combobox } from '../ui/Combobox';
 import { Field } from '../ui/Field';
+import { Lock } from '../ui/Lock';
 import { parseForm } from '../utils/forms';
 import type { Route } from './+types/master-data.companies';
+
+const currencyOptions = ['USD', 'EUR', 'GBP', 'CHF', 'CNY', 'HKD', 'JPY', 'IDR', 'AUD', 'CAD'].map(
+  (c) => ({ value: c, label: c })
+);
+const valuationOptions = stockValuationMethodOptions.map((v) => ({ value: v, label: v }));
 
 export function meta() {
   return [{ title: 'Companies · Hedgile' }];
@@ -51,7 +60,7 @@ export async function action(args: Route.ActionArgs) {
 
 export default function Companies({ loaderData, actionData }: Route.ComponentProps) {
   const { companies, attachments, editing, creating } = loaderData;
-  const errors = actionData?.errors ?? {};
+  const errors: Partial<Record<string, string>> = actionData?.errors ?? {};
   const busy = useNavigation().state === 'submitting';
   const showForm = creating || editing;
 
@@ -68,24 +77,13 @@ export default function Companies({ loaderData, actionData }: Route.ComponentPro
           items={companies.map((c) => ({
             id: c.id,
             title: c.name,
-            subtitle: [c.country, c.vatNumber].filter(Boolean).join(' · ') || undefined,
+            subtitle:
+              c.commercialName && c.commercialName !== c.name ? c.commercialName : undefined,
             details: (
-              <>
-                {c.address && <p>{c.address}</p>}
-                {attachments
-                  .filter((a) => a.objectId === c.id)
-                  .map((a) => (
-                    <a
-                      key={a.id}
-                      href={`/attachments/${a.id}`}
-                      className="attachment"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {a.filename}
-                    </a>
-                  ))}
-              </>
+              <CompanyDetails
+                company={c}
+                attachments={attachments.filter((a) => a.objectId === c.id)}
+              />
             ),
             editTo: `?edit=${c.id}`,
           }))}
@@ -102,12 +100,53 @@ export default function Companies({ loaderData, actionData }: Route.ComponentPro
               required
             />
             <Field
-              label="Country (two letters)"
-              name="country"
-              defaultValue={editing?.country}
-              error={errors.country}
-              placeholder="NL"
+              label="Legal name"
+              name="legalName"
+              defaultValue={editing?.legalName}
+              error={errors.legalName}
             />
+            <Field
+              label="Commercial name"
+              name="commercialName"
+              defaultValue={editing?.commercialName}
+              error={errors.commercialName}
+            />
+            <fieldset className="form-group">
+              <legend>Address</legend>
+              <Field
+                label="Address line 1"
+                name="addressLine1"
+                defaultValue={editing?.addressLine1}
+                error={errors.addressLine1}
+              />
+              <Field
+                label="Address line 2"
+                name="addressLine2"
+                defaultValue={editing?.addressLine2}
+                error={errors.addressLine2}
+              />
+              <Field
+                label="Postal code"
+                name="postalCode"
+                defaultValue={editing?.postalCode}
+                error={errors.postalCode}
+              />
+              <Field label="City" name="city" defaultValue={editing?.city} error={errors.city} />
+              <Field
+                label="State or region"
+                name="stateProvince"
+                defaultValue={editing?.stateProvince}
+                error={errors.stateProvince}
+              />
+              <Field
+                label="Country (two letters)"
+                name="country"
+                defaultValue={editing?.country}
+                error={errors.country}
+                placeholder="HK"
+              />
+              {editing?.address && <input type="hidden" name="address" value={editing.address} />}
+            </fieldset>
             <Field
               label="VAT number"
               name="vatNumber"
@@ -115,11 +154,68 @@ export default function Companies({ loaderData, actionData }: Route.ComponentPro
               error={errors.vatNumber}
             />
             <Field
-              label="Address"
-              name="address"
-              defaultValue={editing?.address}
-              error={errors.address}
+              label="Registration number"
+              name="registrationNumber"
+              defaultValue={editing?.registrationNumber}
+              error={errors.registrationNumber}
             />
+            <Field
+              label="Website"
+              name="website"
+              defaultValue={editing?.website}
+              error={errors.website}
+            />
+            <fieldset className="form-group">
+              <legend>Contact</legend>
+              <Field
+                label="Contact person"
+                name="contactPerson"
+                defaultValue={editing?.contactPerson}
+                error={errors.contactPerson}
+              />
+              <Field
+                label="Contact email"
+                name="contactEmail"
+                type="email"
+                defaultValue={editing?.contactEmail}
+                error={errors.contactEmail}
+              />
+              <Field
+                label="Contact phone"
+                name="contactPhone"
+                defaultValue={editing?.contactPhone}
+                error={errors.contactPhone}
+              />
+            </fieldset>
+            <Combobox
+              label="Stock valuation method"
+              name="stockValuationMethod"
+              options={valuationOptions}
+              defaultValue={editing?.stockValuationMethod ?? undefined}
+            />
+            {errors.stockValuationMethod && (
+              <p className="field__error">{errors.stockValuationMethod}</p>
+            )}
+            <div className="field">
+              <span className="field__label">Base currency</span>
+              <p className="inline-actions">
+                {editing?.baseCurrency ?? 'USD'}
+                <Link
+                  to="/settings/currencies"
+                  className="icon-link"
+                  title="Base currency is set in Settings > Currencies"
+                >
+                  <Lock label="Base currency is set in Settings > Currencies" />
+                </Link>
+              </p>
+            </div>
+            <Combobox
+              label="Reporting currency"
+              name="reportingCurrency"
+              options={currencyOptions}
+              defaultValue={editing?.reportingCurrency ?? undefined}
+            />
+            {errors.reportingCurrency && <p className="field__error">{errors.reportingCurrency}</p>}
             <div className="form-actions">
               <button type="submit" className="button button--primary" disabled={busy}>
                 Save

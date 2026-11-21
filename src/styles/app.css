@@ -400,6 +400,58 @@ select:focus {
   font-size: 0.85rem;
 }
 
+/* Label/value lists on cards (e.g. a company's details) */
+.details {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 12px;
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+}
+.detail {
+  display: contents;
+}
+.detail dt {
+  color: var(--muted);
+}
+.detail dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.detail address {
+  font-style: normal;
+  display: flex;
+  flex-direction: column;
+}
+.inline-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+.icon-link {
+  display: inline-flex;
+  color: var(--muted);
+}
+.icon-link:hover {
+  color: var(--brand);
+}
+.form-group {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  margin: 4px 0 8px;
+}
+.form-group legend {
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0 4px 0 0;
+}
+.field__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 /* Badges and rows */
 .badge {
   display: inline-block;
@@ -809,4 +861,48 @@ a.topbar__user:hover {
 }
 .units-result {
   font-size: 1.25rem;
+}
+
+/* Settings: sub-menu beside each settings page */
+.settings {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.settings__nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: sticky;
+  top: 16px;
+}
+.settings__link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: var(--text);
+  text-decoration: none;
+}
+.settings__link:hover {
+  background: var(--surface);
+}
+.settings__link.is-active {
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+  font-weight: 600;
+}
+@media (max-width: 900px) {
+  .settings {
+    grid-template-columns: 1fr;
+  }
+  .settings__nav ul {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
 }

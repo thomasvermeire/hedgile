@@ -1,15 +1,14 @@
 import { requireTenant } from '../auth/guard.server.js';
 import { UnitsPage } from '../units/UnitsPage';
-
-// No './+types/settings.units' import: that file only exists once the route is listed in
-// src/routes.ts, so this route typechecks before and after it is registered.
-export async function loader(args: Parameters<typeof requireTenant>[0]) {
-  await requireTenant(args);
-  return {};
-}
+import type { Route } from './+types/settings.units';
 
 export function meta() {
-  return [{ title: 'Units · Hedgile' }];
+  return [{ title: 'Units of measure · Settings · Hedgile' }];
+}
+
+export async function loader(args: Route.LoaderArgs) {
+  await requireTenant(args);
+  return null;
 }
 
 export default function SettingsUnits() {

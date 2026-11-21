@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { listAttachments } from '../master-data/attachments.server';
-import { listCompanies } from '../master-data/companies.server';
+import { companyInput, listCompanies } from '../master-data/companies.server';
 import { seedOrgWithUser } from '../test/context';
 import { createTestD1 } from '../test/d1';
 import { createTestR2 } from '../test/r2';
@@ -42,14 +42,14 @@ describe('Laimon drafts', () => {
     db = createTestD1();
     bucket = createTestR2();
     await seedOrgWithUser(db, {
-      orgId: 'org_hedgile',
+      orgId: 'org_drafts_test',
       orgName: 'Hedgile',
       userId: 'u1',
       email: 'a@x.test',
     });
     tenant = {
       db,
-      organisationId: 'org_hedgile',
+      organisationId: 'org_drafts_test',
       organisationName: 'Hedgile',
       userId: 'u1',
       email: 'a@x.test',
@@ -84,12 +84,16 @@ describe('Laimon drafts', () => {
 
   it('confirming creates the company from the checked values, with the PDF attached', async () => {
     const id = await createDraft(tenant, bucket, fakeExtractor, companyKind, pdf());
-    const companyId = await confirmCompanyDraft(tenant, id, {
-      name: 'Rival Metals GmbH',
-      country: 'DE',
-      vatNumber: 'DE123456789',
-      address: 'Hafenstr. 1, Hamburg',
-    });
+    const companyId = await confirmCompanyDraft(
+      tenant,
+      id,
+      companyInput.parse({
+        name: 'Rival Metals GmbH',
+        country: 'DE',
+        vatNumber: 'DE123456789',
+        address: 'Hafenstr. 1, Hamburg',
+      })
+    );
     const [company] = await listCompanies(tenant);
     expect(company).toMatchObject({ id: companyId, vatNumber: 'DE123456789' });
     const [attachment] = await listAttachments(tenant, 'company');
@@ -113,7 +117,7 @@ describe('Laimon drafts', () => {
 
   it('a draft can be confirmed only once', async () => {
     const id = await createDraft(tenant, bucket, fakeExtractor, companyKind, pdf());
-    const input = { name: 'Rival', country: null, vatNumber: null, address: null };
+    const input = companyInput.parse({ name: 'Rival' });
     await confirmCompanyDraft(tenant, id, input);
     await expect(confirmCompanyDraft(tenant, id, input)).rejects.toThrow(DraftClosedError);
     expect(await listCompanies(tenant)).toHaveLength(1);
