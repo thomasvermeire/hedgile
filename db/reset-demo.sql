@@ -21,11 +21,7 @@ INSERT INTO companies (id, organisation_id, name, legal_name, commercial_name, c
   ('co_hedgile_limited', 'org_hedgile', 'Hedgile Limited', 'Hedgile Limited', 'Hedgile Limited', 'HK',
    NULL, NULL, 'Suite 2108, 21/F', 'Two Exchange Square, 8 Connaught Place', 'Central', NULL,
    'Hong Kong', NULL, 'Ingrid Ingot', NULL, NULL,
-   'WAVG', NULL, 'Suite 2108, 21/F, Two Exchange Square, 8 Connaught Place, Central, Hong Kong'),
-  ('co_demo_trading', 'org_hedgile', 'Hedgile Demo Trading BV', NULL, NULL, 'NL',
-   'NL000000000B01', NULL, 'Demo street 1', NULL, 'Rotterdam', NULL,
-   NULL, NULL, NULL, NULL, NULL,
-   NULL, NULL, 'Demo street 1, Rotterdam');
+   'WAVG', NULL, 'Suite 2108, 21/F, Two Exchange Square, 8 Connaught Place, Central, Hong Kong');
 
 INSERT INTO materials (id, organisation_id, code, name, metal) VALUES
   ('mat_ni_cathode', 'org_hedgile', 'NI-CATH', 'Nickel cathodes', 'Nickel'),

@@ -14,10 +14,10 @@ ALTER TABLE companies ADD COLUMN contact_person TEXT;
 ALTER TABLE companies ADD COLUMN contact_email TEXT;
 ALTER TABLE companies ADD COLUMN contact_phone TEXT;
 ALTER TABLE companies ADD COLUMN stock_valuation_method TEXT CHECK (stock_valuation_method IN ('WAVG', 'Batch', 'FIFO', 'LIFO'));
+-- Base currency of the legal entity: shown locked on the card, changed only in Settings > Currencies.
+ALTER TABLE companies ADD COLUMN base_currency TEXT NOT NULL DEFAULT 'USD';
 ALTER TABLE companies ADD COLUMN reporting_currency TEXT;
 
 -- Migrate existing address to address_line_1
 UPDATE companies SET address_line_1 = address WHERE address IS NOT NULL;
-
--- Drop the old address column and rename vat_number to vat_number for consistency
--- Actually, keep the old columns for backward compatibility but they'll be deprecated
+-- `address` stays as the one-line address (Laimon drafts fill it); the card prefers the separate fields.

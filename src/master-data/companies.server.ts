@@ -2,6 +2,9 @@ import { z } from 'zod';
 import { auditStatement } from '../db/audit.js';
 import { newId } from '../db/ids.js';
 import type { Tenant } from '../tenancy/tenant.js';
+import { stockValuationMethodOptions, type StockValuationMethod } from './companies.js';
+
+export { stockValuationMethodOptions, type StockValuationMethod };
 
 export interface Company {
   id: string;
@@ -20,7 +23,9 @@ export interface Company {
   contactPerson: string | null;
   contactEmail: string | null;
   contactPhone: string | null;
-  stockValuationMethod: string | null;
+  stockValuationMethod: StockValuationMethod | null;
+  /** Locked here; changed only in Settings > Currencies. */
+  baseCurrency: string;
   reportingCurrency: string | null;
   address: string | null;
 }
@@ -38,9 +43,6 @@ const optionalShortText = z
   .max(100)
   .optional()
   .transform((v) => (v ? v : null));
-
-export const stockValuationMethodOptions = ['WAVG', 'Batch', 'FIFO', 'LIFO'] as const;
-export type StockValuationMethod = (typeof stockValuationMethodOptions)[number];
 
 export const companyInput = z.object({
   name: z.string().trim().min(1, 'Enter a name').max(200),
@@ -62,7 +64,10 @@ export const companyInput = z.object({
   stateProvince: optionalText,
   website: optionalText,
   contactPerson: optionalText,
-  contactEmail: optionalText,
+  contactEmail: optionalText.refine(
+    (v) => v === null || z.email().safeParse(v).success,
+    'Enter a valid email address'
+  ),
   contactPhone: optionalShortText,
   stockValuationMethod: z
     .enum(stockValuationMethodOptions)
@@ -74,7 +79,10 @@ export const companyInput = z.object({
     .toUpperCase()
     .optional()
     .transform((v) => (v ? v : null))
-    .refine((v) => v === null || /^[A-Z]{3}$/.test(v), 'Use a three-letter currency code, e.g. USD'),
+    .refine(
+      (v) => v === null || /^[A-Z]{3}$/.test(v),
+      'Use a three-letter currency code, e.g. USD'
+    ),
   address: optionalText,
 });
 export type CompanyInput = z.infer<typeof companyInput>;
@@ -84,7 +92,8 @@ const columns = `id, name, legal_name AS legalName, commercial_name AS commercia
   address_line_1 AS addressLine1, address_line_2 AS addressLine2, city, postal_code AS postalCode,
   state_province AS stateProvince, website, contact_person AS contactPerson,
   contact_email AS contactEmail, contact_phone AS contactPhone,
-  stock_valuation_method AS stockValuationMethod, reporting_currency AS reportingCurrency,
+  stock_valuation_method AS stockValuationMethod, base_currency AS baseCurrency,
+  reporting_currency AS reportingCurrency,
   address`;
 
 export async function listCompanies(tenant: Tenant): Promise<Company[]> {
@@ -121,11 +130,26 @@ export async function createCompany(
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .bind(
-        id, tenant.organisationId, input.name, 
-        input.legalName ?? null, input.commercialName ?? null, input.country,
-        input.vatNumber ?? null, input.registrationNumber ?? null, input.addressLine1 ?? null, input.addressLine2 ?? null,
-        input.city ?? null, input.postalCode ?? null, input.stateProvince ?? null, input.website ?? null, input.contactPerson ?? null,
-        input.contactEmail ?? null, input.contactPhone ?? null, input.stockValuationMethod ?? null, input.reportingCurrency ?? null, input.address ?? null
+        id,
+        tenant.organisationId,
+        input.name,
+        input.legalName ?? null,
+        input.commercialName ?? null,
+        input.country,
+        input.vatNumber ?? null,
+        input.registrationNumber ?? null,
+        input.addressLine1 ?? null,
+        input.addressLine2 ?? null,
+        input.city ?? null,
+        input.postalCode ?? null,
+        input.stateProvince ?? null,
+        input.website ?? null,
+        input.contactPerson ?? null,
+        input.contactEmail ?? null,
+        input.contactPhone ?? null,
+        input.stockValuationMethod ?? null,
+        input.reportingCurrency ?? null,
+        input.address ?? null
       ),
     ...extra(id),
     auditStatement(tenant.db, {
@@ -158,13 +182,26 @@ export async function updateCompany(
        WHERE organisation_id = ? AND id = ? RETURNING id`
     )
     .bind(
-      input.name, 
-      input.legalName ?? null, input.commercialName ?? null, input.country,
-      input.vatNumber ?? null, input.registrationNumber ?? null, input.addressLine1 ?? null, input.addressLine2 ?? null,
-      input.city ?? null, input.postalCode ?? null, input.stateProvince ?? null, input.website ?? null,
-      input.contactPerson ?? null, input.contactEmail ?? null, input.contactPhone ?? null,
-      input.stockValuationMethod ?? null, input.reportingCurrency ?? null, input.address ?? null,
-      tenant.organisationId, id
+      input.name,
+      input.legalName ?? null,
+      input.commercialName ?? null,
+      input.country,
+      input.vatNumber ?? null,
+      input.registrationNumber ?? null,
+      input.addressLine1 ?? null,
+      input.addressLine2 ?? null,
+      input.city ?? null,
+      input.postalCode ?? null,
+      input.stateProvince ?? null,
+      input.website ?? null,
+      input.contactPerson ?? null,
+      input.contactEmail ?? null,
+      input.contactPhone ?? null,
+      input.stockValuationMethod ?? null,
+      input.reportingCurrency ?? null,
+      input.address ?? null,
+      tenant.organisationId,
+      id
     )
     .all();
   if (results.length === 0) return false;

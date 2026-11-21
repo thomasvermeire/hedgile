@@ -19,6 +19,7 @@ export default [
   layout('routes/app-layout.tsx', [
     index('routes/home.tsx'),
     route('settings', 'routes/settings.tsx'),
+    route('settings/currencies', 'routes/settings.currencies.tsx'),
     route('account', 'routes/account.tsx'),
     route('master-data/companies', 'routes/master-data.companies.tsx'),
     route('master-data/materials', 'routes/master-data.materials.tsx'),
