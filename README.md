@@ -23,7 +23,7 @@ Requires Node 22 (see `.nvmrc`) and pnpm 9.
 
 ```bash
 pnpm install
-cp .dev.vars.example .dev.vars        # then fill in the values (see below)
+cp .env.example .dev.vars             # then fill in the values (see below)
 pnpm db:migrate:local                 # create the local D1 database
 pnpm db:reset:local                   # load the demo start state
 pnpm dev                              # http://localhost:5173
@@ -46,7 +46,7 @@ Local sign-in needs a LaimonID client that allows `http://localhost:5173/auth/ca
 
 ## Settings
 
-Plain settings are `vars` in `wrangler.jsonc`; secrets are set in the Cloudflare dashboard (Worker **hedgileapp** > Settings > Variables and Secrets) or with `pnpm exec wrangler secret put NAME`. Locally, all of them go in `.dev.vars` (git-ignored; template in `.dev.vars.example`). They are checked on the first request; a missing or invalid one shows a page naming it.
+Plain settings are `vars` in `wrangler.jsonc`; secrets are set in the Cloudflare dashboard (Worker **hedgileapp** > Settings > Variables and Secrets) or with `pnpm exec wrangler secret put NAME`. Locally, all of them go in `.dev.vars` (git-ignored; template with safe example values in `.env.example`). They are checked on the first request; a missing or invalid one shows a page naming it.
 
 | Setting                  | Kind   | Description                                                                     |
 | ------------------------ | ------ | ------------------------------------------------------------------------------- |
