@@ -1069,3 +1069,52 @@ a.topbar__user:hover {
   color: var(--muted);
   padding-bottom: 4px;
 }
+
+/* Markets */
+:root {
+  --market-only-bg: #fff8e6;
+  --market-only-badge-bg: #fdebc2;
+  --market-only-text: #7a4f00;
+}
+.metal-card {
+  border-left: 4px solid var(--brand);
+}
+.metal-card--market {
+  border-left-color: var(--accent);
+  background: var(--market-only-bg);
+}
+.metal-card__symbol {
+  display: inline-block;
+  min-width: 1.8em;
+  font-weight: 700;
+  color: var(--brand-strong);
+}
+.metal-card--market .metal-card__symbol {
+  color: var(--market-only-text);
+}
+.badge--book {
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+}
+.badge--market {
+  background: var(--market-only-badge-bg);
+  color: var(--market-only-text);
+}
+.metal-card__references {
+  list-style: none;
+  margin: 8px 0 4px;
+  padding: 0;
+}
+.metal-card__references li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 4px;
+  margin-bottom: 4px;
+}
+.metal-card__references .is-inactive {
+  opacity: 0.65;
+}
+.metal-card__add {
+  font-size: 0.85rem;
+}
