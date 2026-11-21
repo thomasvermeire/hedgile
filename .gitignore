@@ -35,3 +35,6 @@ coverage/
 .dev.vars.*
 .wrangler/
 .react-router/
+
+# Claude Code agent worktrees
+.claude/worktrees/
