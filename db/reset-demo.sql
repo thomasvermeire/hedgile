@@ -7,6 +7,8 @@
 
 DELETE FROM extraction_drafts WHERE organisation_id = 'org_hedgile';
 DELETE FROM value_provenance WHERE organisation_id = 'org_hedgile';
+DELETE FROM storage_locations WHERE organisation_id = 'org_hedgile';
+DELETE FROM plants WHERE organisation_id = 'org_hedgile';
 DELETE FROM attachments WHERE organisation_id = 'org_hedgile';
 DELETE FROM companies WHERE organisation_id = 'org_hedgile';
 DELETE FROM materials WHERE organisation_id = 'org_hedgile';
@@ -15,7 +17,14 @@ DELETE FROM metal_references WHERE organisation_id = 'org_hedgile';
 UPDATE organisations SET name = 'Hedgile', base_currency = 'USD', test_mode = 0 WHERE id = 'org_hedgile';
 
 INSERT INTO companies (id, organisation_id, name, country, vat_number, address) VALUES
-  ('co_demo_trading', 'org_hedgile', 'Hedgile Demo Trading BV', 'NL', 'NL000000000B01', 'Demo street 1, Rotterdam');
+  ('co_demo_trading', 'org_hedgile', 'Hedgile Demo Trading BV', 'NL', 'NL000000000B01', 'Demo street 1, Rotterdam'),
+  ('co_hedgile_limited', 'org_hedgile', 'Hedgile Limited', 'GB', 'GB000000000LTD', 'Hedgile House, London');
+
+INSERT INTO plants (id, organisation_id, company_id, internal_number, code, description, address) VALUES
+  ('pl_hedgile_main', 'org_hedgile', 'co_hedgile_limited', 'PL001', 'PL-MAIN', 'Main Plant', 'Hedgile House, London');
+
+INSERT INTO storage_locations (id, organisation_id, plant_id, code, description) VALUES
+  ('sl_hedgile_warehouse', 'org_hedgile', 'pl_hedgile_main', 'SL-WH01', 'Main Warehouse');
 
 INSERT INTO materials (id, organisation_id, code, name, metal) VALUES
   ('mat_ni_cathode', 'org_hedgile', 'NI-CATH', 'Nickel cathodes', 'Nickel'),
