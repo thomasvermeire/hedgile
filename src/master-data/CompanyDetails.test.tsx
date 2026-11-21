@@ -76,6 +76,18 @@ describe('company card', () => {
     ).toHaveAttribute('href', '/master-data/companies?edit=co_hedgile_limited');
   });
 
+  it('shows the base currency as the default reporting currency, and an explicit one as chosen', () => {
+    const { unmount } = renderCard(hedgileLimited);
+    const reporting = screen.getByText('Reporting currency').nextElementSibling as HTMLElement;
+    expect(reporting).toHaveTextContent('USD (default)');
+    expect(screen.queryByText('Not set')).not.toBeInTheDocument();
+    unmount();
+    renderCard({ ...hedgileLimited, reportingCurrency: 'EUR' });
+    const chosen = screen.getByText('Reporting currency').nextElementSibling as HTMLElement;
+    expect(chosen).toHaveTextContent('EUR');
+    expect(chosen).not.toHaveTextContent('default');
+  });
+
   it('falls back to the one-line address when the separate fields are empty', () => {
     renderCard({
       ...hedgileLimited,

@@ -1118,3 +1118,12 @@ a.topbar__user:hover {
 .metal-card__add {
   font-size: 0.85rem;
 }
+
+/* Currencies */
+.currencies__org {
+  margin-bottom: 24px;
+}
+.currencies__edit {
+  display: grid;
+  gap: 8px;
+}
