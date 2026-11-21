@@ -66,6 +66,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
   - `src/tenancy/` — organisations, memberships, roles, sign-in (`signIn`, lockout, bootstrap admin).
   - `src/navigation/` — the menu (spec order, locked entries) and its icons.
   - `src/ui/` — shared UI kit: `Combobox`, `CardList`, `Lock`, `KnownBadge`, `rowClassName`, `Field`.
+  - `src/units/` — pure unit conversion (kg, lb, mt) and exact decimal arithmetic with rounding; the Units settings page.
   - `src/master-data/`, `src/settings/` — the first screens' data access.
   - `src/posting/` — system date / posting date rules (`postingDateSchema`, `isBackdated`, `today`) and the organisation's test mode.
   - `src/provenance/` — why a value is what it is: `provenanceStatement` (record in the write's batch), `getProvenance`, Zod entry, `renderCalculation`; API at `src/routes/api.provenance.ts`.
@@ -85,6 +86,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - Provenance: every stored or calculated figure records provenance in the same batch as the write (`provenanceStatement`), and is shown with `ProvenanceValue`. Formulas are stored as readable text plus named inputs, never evaluated.
 - Releases: a release is cut by adding its entry (changes from Laimonade's done items) at the top of `src/versioning/releases.ts` and bumping `package.json` `version` to match, in the same merge to `main`; a test checks the two agree. The Worker never calls Laimonade.
 - Logging: always through `createLogger()` in `src/utils/logger.ts`, never `console.*` directly (ESLint enforces it).
+- Quantities and values: convert with `src/units` (`convert`, exact decimals, no floats) and round only at the end of a calculation (`roundQuantity` 5 decimals, `roundValue` 2, half up). Never round intermediate steps.
 - Menu entries without a module open a placeholder page; locked entries have no path at all.
 
 ### Domain terms

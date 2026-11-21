@@ -796,3 +796,17 @@ a.topbar__user:hover {
   font-size: 0.75rem;
   font-weight: 600;
 }
+
+/* Units */
+.units-table {
+  border-collapse: collapse;
+  margin-bottom: 8px;
+}
+.units-table th,
+.units-table td {
+  padding: 4px 24px 4px 0;
+  text-align: left;
+}
+.units-result {
+  font-size: 1.25rem;
+}
