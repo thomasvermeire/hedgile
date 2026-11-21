@@ -633,3 +633,57 @@ select:focus {
     width: 100%;
   }
 }
+
+/* Version and releases */
+.version-link {
+  display: block;
+  margin-top: 16px;
+  padding: 0 8px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+.version-link:hover {
+  color: var(--brand);
+}
+.releases {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+}
+.release {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+}
+.release h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.release h3 {
+  margin: 12px 0 4px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.release p {
+  margin: 4px 0 0;
+}
+.release ul {
+  margin: 0;
+  padding-left: 20px;
+}
+.release__date {
+  font-weight: 400;
+}
+.release__current {
+  margin-left: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+  font-size: 0.75rem;
+  font-weight: 600;
+}

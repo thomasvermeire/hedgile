@@ -15,6 +15,7 @@ It is one **Cloudflare Worker** (`hedgileapp`): a **React Router 7** app whose p
 - **Settings**: organisation name and base currency; invite members by email and change their role.
 - **Laimon panel**: on every page; chat, or drop a PDF to get a draft with a confidence per field, edit it, and save only after confirming. The PDF is attached to the record created, and the extraction is in the audit trail.
 - **Deploy**: every push to `main` deploys to production (other branches are not deployed); `pnpm db:reset:remote` puts the demo organisation back to its start state.
+- **Versions**: the app shows its version and build commit at the bottom of the menu; `/releases` lists each release with the stories, bugs and improvements that changed since the previous one.
 - **Health check**: `GET /health` reports whether the Worker and its database are up.
 
 ## Install, run, test, build
@@ -78,6 +79,12 @@ One-time setup in the Cloudflare dashboard:
 
 After that, a merge to `main` is live in a few minutes. Only `main` is deployed; check other branches locally with `pnpm dev`.
 
+## Cutting a release
+
+1. Add an entry at the top of `src/versioning/releases.ts` (version, date, and the done stories, bugs and improvements from Laimonade since the previous release).
+2. Bump `version` in `package.json` to match.
+3. Merge to `main`. The build injects the version and commit shown in the app.
+
 ## Project structure
 
 ```
@@ -94,6 +101,7 @@ src/ui/                 Shared UI kit
 src/master-data/        Companies, materials, metal references, attachments
 src/settings/           Organisation settings and members
 src/laimon/             Laimon panel, Claude calls, drafts
+src/versioning/         App version and the release list
 src/config/env.ts       Settings validation
 src/utils/              Logger, validation, form helpers
 src/test/               Test doubles and the end-to-end main-flow test

@@ -68,6 +68,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
   - `src/ui/` — shared UI kit: `Combobox`, `CardList`, `Lock`, `KnownBadge`, `rowClassName`, `Field`.
   - `src/master-data/`, `src/settings/` — the first screens' data access.
   - `src/laimon/` — the Laimon panel, Claude calls, extraction kinds, drafts.
+  - `src/versioning/` — the app version (`package.json` plus the build commit, injected by Vite `define`) and the typed release list behind `/releases`.
   - `src/config/env.ts` — the Worker settings, validated with Zod.
   - `src/db/` — ids and the audit trail.
   - `src/test/` — test doubles: D1 on Node's SQLite with the real migrations, in-memory R2, a fake LaimonID, the end-to-end main-flow test.
@@ -78,6 +79,7 @@ CI (`.github/workflows/ci.yml`) runs these on every push and pull request. Run t
 - Tenancy: every organisation-owned table has `organisation_id`, and every query on it goes through a function that takes a `Tenant` and filters on it. Never query those tables with an id alone. `src/tenancy/isolation.test.ts` checks each new read/write from a second organisation; extend it when you add one.
 - Sign-in is LaimonID only. A person joins an organisation by an invitation for their verified email, or by being listed in `BOOTSTRAP_ADMIN_EMAILS` (joins Hedgile as admin). Membership is re-checked on every request.
 - Laimon never writes figures itself: extraction produces a draft (value, confidence, evidence per field) the user edits and confirms; only then is the object created, with the PDF attached and the extraction and confirmation in `audit_log`.
+- Releases: a release is cut by adding its entry (changes from Laimonade's done items) at the top of `src/versioning/releases.ts` and bumping `package.json` `version` to match, in the same merge to `main`; a test checks the two agree. The Worker never calls Laimonade.
 - Logging: always through `createLogger()` in `src/utils/logger.ts`, never `console.*` directly (ESLint enforces it).
 - Menu entries without a module open a placeholder page; locked entries have no path at all.
 

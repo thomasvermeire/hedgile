@@ -1,10 +1,11 @@
 import { LogOut } from 'lucide-react';
-import { Form, Outlet } from 'react-router';
+import { Form, Link, Outlet } from 'react-router';
 import { appConfig, requireTenant } from '../auth/guard.server.js';
 import { LaimonPanel } from '../laimon/LaimonPanel';
 import { listActiveReferences } from '../master-data/references.server.js';
 import { buildMenu } from '../navigation/menu';
 import { Sidebar } from '../navigation/Sidebar';
+import { formatVersionLabel, getAppVersion } from '../versioning/version';
 import type { Route } from './+types/app-layout';
 
 export async function loader(args: Route.LoaderArgs) {
@@ -30,6 +31,9 @@ export default function AppLayout({ loaderData }: Route.ComponentProps) {
           Hedgile
         </div>
         <Sidebar menu={buildMenu(references)} />
+        <Link to="/releases" className="version-link" title="Releases">
+          {formatVersionLabel(getAppVersion())}
+        </Link>
       </aside>
       <div className="shell__main">
         <header className="topbar">

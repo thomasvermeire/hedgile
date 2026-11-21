@@ -24,6 +24,7 @@ export default [
     route('master-data/materials', 'routes/master-data.materials.tsx'),
     route('market-data/metals/:referenceId', 'routes/market-data.metal.tsx'),
     route('laimon/drafts/:draftId', 'routes/laimon.draft.tsx'),
+    route('releases', 'routes/releases.tsx'),
     route('*', 'routes/module-placeholder.tsx'),
   ]),
 ] satisfies RouteConfig;
